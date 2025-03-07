@@ -1,6 +1,6 @@
 # 🧑‍💻 Group 6's team project
 
-## Project Proposal
+## 1️⃣ Project Proposal
 - Project Overview
 > ReSource is a comprehensive platform designed to address resource inequality by connecting those with surplus resources to those in need. The platform will be developed in a phased approach, initially focusing on food redistribution to combat hunger, followed by book sharing to improve access to educational materials, with potential future expansions to furniture redistribution and financial contributions. By leveraging technology and community engagement, ReSource creates an efficient ecosystem for resource redistribution, reducing waste while addressing fundamental needs.
 - Problem Statement
@@ -97,4 +97,59 @@
 
 ### Conclusion
 > ReSource aims to create a sustainable solution to resource inequality through a phased approach that prioritizes food redistribution, followed by book sharing and potentially furniture and financial contributions. The platform's strategic development plan ensures that at least one critical function—food sharing—is fully operational before expanding to additional resources. By focusing initially on addressing food insecurity, ReSource will establish its core infrastructure, user base, and operational processes. This foundation will then support the seamless integration of book sharing, primarily benefiting students and lifelong learners who lack access to educational materials. The technical architecture, built on React, Flask, PostgreSQL, and Google Cloud Platform, provides a robust framework that allows for both current functionality and future expansion. JWT authentication ensures secure user interactions, while the modular design enables the team to adapt to changing timelines and requirements. Through this thoughtfully sequenced approach, ReSource will maximize its impact and sustainability, ensuring that even if development challenges arise, the platform will still deliver meaningful value by reducing waste and addressing critical community needs.
+
+## 2️⃣ Project Proposal
+
+## 3️⃣ Team Charters
+```
+Communication Norms: 
+
+a) Will your team have regular team meetings? When and where will your team meet?
+Regular meetings: Every Monday and Wednesday at 8:30AM via Zoom/in person
+
+b) How will you communicate as a team? (face-to-face, using video conferencing, etc.)
+Primary: Slack for daily updates and discord for quick questions.
+
+c) What are the norms for responding to virtual communication?  (e.g., respond to emails within 24 hours, etc.)
+Acknowledge messages within 12 hours
+ 
+Operating Guidelines:
+
+a) How will your team make decisions? 
+Consensus for decisions
+
+b) What are your team’s expectations regarding team member performance and contribution quality?  
+Complete assigned tasks by deadlines
+
+c) What are your team’s expectations regarding cooperation and attitudes? 
+Respect diverse perspectives
+
+d) What are your team's expectations regarding meeting attendance, punctuality, and participation?
+Notify the team in advance if unable to attend, and share progress updates in meetings even if absent
+
+e) What precautions will you take to avoid a situation where one or two people are doing an outsized amount of the team’s work?
+Weekly check-ins to redistribute tasks if someone is overloaded
+
+f) How will you handle different expectations around when to start on assignments (i.e. some team members procrastinate more than others)?
+Break tasks into smaller subtasks with interim deadlines
+ 
+Conflict Management:
+
+a) What strategies will your team will use to resolve differences of opinions among members? 
+Discuss issues openly in meetings
+
+b) What strategies will your team use to deal with non-responsive or underperforming members?
+Reassign tasks or provide peer support.
+
+c) How will your team handle unexpected issues (e.g. family emergencies, illnesses, etc.)? 
+Adjust deadlines collaboratively for valid reasons
+ 
+Outside Commitments: 
+
+a) Are there any outside commitments (family, job, personal) that could impact an individual's ability to work on this team project?
+Team members should inform the group of major conflicts in advance.
+
+Indicate full team agreement on these decisions: All team members must indicate their agreement by typing their names at the bottom of this document.
+Nayoung Choi, Harry Jeon, Atharva Negi, Bohan Wang
+```
 
