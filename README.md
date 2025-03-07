@@ -102,7 +102,7 @@
 
 ## 3️⃣ Team Charters
 ```
-Communication Norms: 
+✔️ Communication Norms: 
 
 a) Will your team have regular team meetings? When and where will your team meet?
 Regular meetings: Every Monday and Wednesday at 8:30AM via Zoom/in person
@@ -113,7 +113,7 @@ Primary: Slack for daily updates and discord for quick questions.
 c) What are the norms for responding to virtual communication?  (e.g., respond to emails within 24 hours, etc.)
 Acknowledge messages within 12 hours
  
-Operating Guidelines:
+✔️ Operating Guidelines:
 
 a) How will your team make decisions? 
 Consensus for decisions
@@ -133,7 +133,7 @@ Weekly check-ins to redistribute tasks if someone is overloaded
 f) How will you handle different expectations around when to start on assignments (i.e. some team members procrastinate more than others)?
 Break tasks into smaller subtasks with interim deadlines
  
-Conflict Management:
+✔️ Conflict Management:
 
 a) What strategies will your team will use to resolve differences of opinions among members? 
 Discuss issues openly in meetings
@@ -144,7 +144,7 @@ Reassign tasks or provide peer support.
 c) How will your team handle unexpected issues (e.g. family emergencies, illnesses, etc.)? 
 Adjust deadlines collaboratively for valid reasons
  
-Outside Commitments: 
+✔️ Outside Commitments: 
 
 a) Are there any outside commitments (family, job, personal) that could impact an individual's ability to work on this team project?
 Team members should inform the group of major conflicts in advance.
