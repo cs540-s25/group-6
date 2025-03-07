@@ -100,6 +100,60 @@
 
 ## 2️⃣ Project Proposal
 
+### Phase 1: Food Sharing System
+
+| Task                    | Description                                                            | Priority | Est. Time |
+|-------------------------|------------------------------------------------------------------------|----------|-----------|
+| Project Setup            | Initialize repository, set up tech stack, configure CI/CD pipeline     | P1       | 5 days    |
+| Database Schema Design   | Design and implement database models for users, food items, transactions | P1       | 4 days    |
+| User Authentication      | Implement user registration, login, role-based access with JWT         | P1       | 6 days    |
+| User Profiles            | Create profile management for different user types (providers, recipients, facilitators) | P1       | 4 days    |
+| Food Listing - Core      | Implement basic functionality to post food items with essential details | P1       | 7 days    |
+| Food Listing - Enhanced  | Add photo uploads, detailed food information, allergen tagging          | P2       | 5 days    |
+| Search & Filter          | Create search and filter functionality for food listings by location and type | P1       | 6 days    |
+| Reservation System       | Implement system for recipients to reserve available food              | P1       | 7 days    |
+| Notification System       | Create system for alerts on available items and reservation confirmations | P2       | 5 days    |
+| Pickup/Delivery Coordination | Implement basic logistics for item pickup/delivery                      | P1       | 8 days    |
+| Volunteer Management      | Create registration and scheduling for volunteer delivery riders         | P2       | 6 days    |
+| Route Optimization        | Implement delivery route optimization for volunteers                     | P3       | 7 days    |
+| Rating System            | Develop rating and feedback system for users                            | P2       | 4 days    |
+| Food Safety Guidelines   | Implement food safety compliance checking and guidelines                 | P2       | 3 days    |
+| User Verification         | Create verification process for users (esp. providers and organizations) | P2       | 5 days    |
+| Basic Analytics           | Implement simple metrics tracking for food saved and distributed        | P3       | 5 days    |
+| Mobile Responsiveness     | Ensure platform works well on mobile devices                            | P2       | 6 days    |
+| Testing & Bug Fixes       | Comprehensive testing and bug fixing for Phase 1                        | P1       | 10 days   |
+
+### Phase 2: Book Sharing System
+
+| Task                    | Description                                                            | Priority | Est. Time |
+|-------------------------|------------------------------------------------------------------------|----------|-----------|
+| Book Database Models     | Design and implement database models for books                          | P1       | 3 days    |
+| Book Listing Interface   | Create interface for donors to post available books with details        | P1       | 6 days    |
+| Book Condition Assessment| Implement system for evaluating and reporting book condition            | P2       | 4 days    |
+| Book Classification      | Create genre/subject and educational level classification system        | P2       | 5 days    |
+| Book Search & Browse     | Implement search and browse functionality for books                     | P1       | 6 days    |
+| Wishlist Creation        | Enable recipients to create wishlists for needed books                  | P2       | 4 days    |
+| Messaging System         | Implement direct messaging between donors and recipients                | P1       | 7 days    |
+| Exchange Logistics       | Create system for arranging book exchanges                              | P1       | 5 days    |
+| Transfer Confirmation    | Implement confirmation of successful book transfers                     | P1       | 3 days    |
+| Book Impact Tracking     | Develop metrics for book donations and educational impacts              | P3       | 5 days    |
+| Book Categorization       | Add educational level and subject matter categorization                  | P3       | 6 days    |
+| Integration Testing       | Ensure book system integrates properly with existing platform            | P1       | 7 days    |
+| Final Testing & Deployment| Complete testing and deployment of full platform                         | P1       | 8 days    |
+
+### Optional Expansion (If Time Permits)
+
+| Task                     | Description                                                              | Priority | Est. Time |
+|--------------------------|--------------------------------------------------------------------------|----------|-----------|
+| Furniture Listing System  | Create infrastructure for furniture redistribution                        | P3       | 10 days   |
+| Large Item Logistics      | Implement specialized logistics for furniture transport                   | P3       | 8 days    |
+| Financial Donation Integration | Integrate with payment gateway (Stripe/PayPal)                         | P3       | 7 days    |
+| Donation Tracking         | Create system for tracking and acknowledging financial contributions     | P3       | 5 days    |
+| Reporting System          | Implement transparent reporting on fund utilization                      | P3       | 6 days    |
+| Mobile Applications       | Develop native mobile apps for iOS and Android                           | P3       | 15 days   |
+| Community Forums          | Build community forums for knowledge sharing                             | P3       | 8 days    |
+| Gamification Elements     | Implement badges, points, and other engagement features                  | P3       | 7 days    |
+
 ## 3️⃣ Team Charters
 ```
 ✔️ Communication Norms: 
