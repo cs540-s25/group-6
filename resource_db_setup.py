@@ -74,15 +74,8 @@ class FoodListing(Base):
 
     # Relationships
     provider = relationship("User", back_populates="food_listings")
-    reservations = relationship("Reservation",
-                                primaryjoin="and_(Reservation.resource_type=='food', Reservation.resource_id==FoodListing.food_id)",
-                                back_populates="food_listing")
-    ratings = relationship("Rating",
-                           primaryjoin="and_(Rating.resource_type=='food', Rating.resource_id==FoodListing.food_id)",
-                           back_populates="food_listing")
-    images = relationship("Image",
-                          primaryjoin="and_(Image.resource_type=='food', Image.resource_id==FoodListing.food_id)",
-                          back_populates="food_listing")
+
+    # No direct relationships to polymorphic associations
 
 
 class BookListing(Base):
@@ -105,15 +98,8 @@ class BookListing(Base):
 
     # Relationships
     donor = relationship("User", back_populates="book_listings")
-    reservations = relationship("Reservation",
-                                primaryjoin="and_(Reservation.resource_type=='book', Reservation.resource_id==BookListing.book_id)",
-                                back_populates="book_listing")
-    ratings = relationship("Rating",
-                           primaryjoin="and_(Rating.resource_type=='book', Rating.resource_id==BookListing.book_id)",
-                           back_populates="book_listing")
-    images = relationship("Image",
-                          primaryjoin="and_(Image.resource_type=='book', Image.resource_id==BookListing.book_id)",
-                          back_populates="book_listing")
+
+    # No direct relationships to polymorphic associations
 
 
 class Reservation(Base):
@@ -131,12 +117,6 @@ class Reservation(Base):
 
     # Relationships
     requester = relationship("User", foreign_keys=[requester_id], back_populates="reservations_made")
-    food_listing = relationship("FoodListing",
-                                primaryjoin="and_(Reservation.resource_type=='food', Reservation.resource_id==FoodListing.food_id)",
-                                back_populates="reservations")
-    book_listing = relationship("BookListing",
-                                primaryjoin="and_(Reservation.resource_type=='book', Reservation.resource_id==BookListing.book_id)",
-                                back_populates="reservations")
     delivery = relationship("Delivery", uselist=False, back_populates="reservation")
 
 
@@ -157,9 +137,6 @@ class Delivery(Base):
     # Relationships
     reservation = relationship("Reservation", back_populates="delivery")
     rider = relationship("User", foreign_keys=[rider_id], back_populates="deliveries_performed")
-    ratings = relationship("Rating",
-                           primaryjoin="and_(Rating.resource_type=='delivery', Rating.resource_id==Delivery.delivery_id)",
-                           back_populates="delivery")
 
 
 class Rating(Base):
@@ -177,15 +154,6 @@ class Rating(Base):
     # Relationships
     giver = relationship("User", foreign_keys=[giver_id], back_populates="ratings_given")
     receiver = relationship("User", foreign_keys=[receiver_id], back_populates="ratings_received")
-    food_listing = relationship("FoodListing",
-                                primaryjoin="and_(Rating.resource_type=='food', Rating.resource_id==FoodListing.food_id)",
-                                back_populates="ratings")
-    book_listing = relationship("BookListing",
-                                primaryjoin="and_(Rating.resource_type=='book', Rating.resource_id==BookListing.book_id)",
-                                back_populates="ratings")
-    delivery = relationship("Delivery",
-                            primaryjoin="and_(Rating.resource_type=='delivery', Rating.resource_id==Delivery.delivery_id)",
-                            back_populates="ratings")
 
 
 class Image(Base):
@@ -197,17 +165,6 @@ class Image(Base):
     image_url = Column(String, nullable=False)
     caption = Column(String)
     uploaded_at = Column(DateTime, default=datetime.datetime.utcnow)
-
-    # Relationships
-    food_listing = relationship("FoodListing",
-                                primaryjoin="and_(Image.resource_type=='food', Image.resource_id==FoodListing.food_id)",
-                                back_populates="images")
-    book_listing = relationship("BookListing",
-                                primaryjoin="and_(Image.resource_type=='book', Image.resource_id==BookListing.book_id)",
-                                back_populates="images")
-    impact = relationship("Impact",
-                          primaryjoin="and_(Image.resource_type=='impact', Image.resource_id==Impact.impact_id)",
-                          back_populates="images")
 
 
 class Impact(Base):
@@ -224,9 +181,6 @@ class Impact(Base):
 
     # Relationships
     user = relationship("User", back_populates="impacts")
-    images = relationship("Image",
-                          primaryjoin="and_(Image.resource_type=='impact', Image.resource_id==Impact.impact_id)",
-                          back_populates="impact")
 
 
 class Message(Base):
@@ -261,6 +215,56 @@ def create_database(db_file='resource_sharing.db'):
 def get_session_factory(engine):
     Session = sessionmaker(bind=engine)
     return Session
+
+
+# Helper functions to get related objects
+def get_food_reservations(session, food_id):
+    """Get all reservations for a food listing"""
+    return session.query(Reservation).filter_by(resource_type='food', resource_id=food_id).all()
+
+
+def get_book_reservations(session, book_id):
+    """Get all reservations for a book listing"""
+    return session.query(Reservation).filter_by(resource_type='book', resource_id=book_id).all()
+
+
+def get_food_ratings(session, food_id):
+    """Get all ratings for a food listing"""
+    return session.query(Rating).filter_by(resource_type='food', resource_id=food_id).all()
+
+
+def get_book_ratings(session, book_id):
+    """Get all ratings for a book listing"""
+    return session.query(Rating).filter_by(resource_type='book', resource_id=book_id).all()
+
+
+def get_delivery_ratings(session, delivery_id):
+    """Get all ratings for a delivery"""
+    return session.query(Rating).filter_by(resource_type='delivery', resource_id=delivery_id).all()
+
+
+def get_food_images(session, food_id):
+    """Get all images for a food listing"""
+    return session.query(Image).filter_by(resource_type='food', resource_id=food_id).all()
+
+
+def get_book_images(session, book_id):
+    """Get all images for a book listing"""
+    return session.query(Image).filter_by(resource_type='book', resource_id=book_id).all()
+
+
+def get_impact_images(session, impact_id):
+    """Get all images for an impact story"""
+    return session.query(Image).filter_by(resource_type='impact', resource_id=impact_id).all()
+
+
+def get_resource_for_reservation(session, reservation):
+    """Get the resource (food or book) for a reservation"""
+    if reservation.resource_type == 'food':
+        return session.query(FoodListing).filter_by(food_id=reservation.resource_id).first()
+    elif reservation.resource_type == 'book':
+        return session.query(BookListing).filter_by(book_id=reservation.resource_id).first()
+    return None
 
 
 if __name__ == "__main__":
