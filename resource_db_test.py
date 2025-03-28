@@ -1,9 +1,9 @@
 # resource_db_test.py
 import datetime
-from resource_db_setup import (
+from backend.resource_db_setup import (
     create_database, get_session_factory,
     Role, User, FoodListing, BookListing, Reservation, Delivery, Rating, Image, Impact, Message,
-    get_food_reservations, get_book_reservations, get_resource_for_reservation
+    get_resource_for_reservation
 )
 
 
