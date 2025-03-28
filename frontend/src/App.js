@@ -7,12 +7,11 @@ import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import ResetPasswordRequestPage from './pages/ResetPasswordRequestPage';
 import ResendVerificationPage from './pages/ResendVerificationPage';
-import AddFoodItemPage from './pages/AddFoodItemPage';
-import FoodDetailPage from './pages/FoodDetailPage';
+import PostUploadPage from './pages/PostUploadPage';
+import PostViewingPage from './pages/PostViewingPage';
 import ProfilePage from './pages/ProfilePage';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 
-// Protected route component
 const ProtectedRoute = ({ children }) => {
   const { currentUser, loading } = useAuth();
 
@@ -37,14 +36,14 @@ function AppRoutes() {
       <Route path="/reset-password-request" element={<ResetPasswordRequestPage />} />
       <Route path="/resend-verification" element={<ResendVerificationPage />} />
       <Route
-        path="/add-food"
+        path="/posts/new"
         element={
           <ProtectedRoute>
-            <AddFoodItemPage />
+            <PostUploadPage />
           </ProtectedRoute>
         }
       />
-      <Route path="/food/:id" element={<FoodDetailPage />} />
+      <Route path="/posts/:postId" element={<PostViewingPage />} />
       <Route
         path="/profile"
         element={
