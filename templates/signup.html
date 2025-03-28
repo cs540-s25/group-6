@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Sign Up</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss/dist/tailwind.min.css">
+</head>
+<body class="bg-gray-50 flex flex-col justify-center items-center min-h-screen">
+  <h2 class="text-3xl font-semibold text-green-600 mb-6">Create Your Account</h2>
+  <form method="POST" class="bg-white p-6 rounded-xl shadow-md w-full max-w-lg space-y-4">
+    <div class="flex gap-2">
+      <input name="first_name" placeholder="First Name" required class="w-1/2 p-2 border rounded" />
+      <input name="last_name" placeholder="Last Name" required class="w-1/2 p-2 border rounded" />
+    </div>
+    <input name="email" type="email" placeholder="Email (@emory.edu)" required class="w-full p-2 border rounded" />
+    <input name="password" type="password" placeholder="Password" required class="w-full p-2 border rounded" />
+    <input name="phone_number" placeholder="Phone Number (optional)" class="w-full p-2 border rounded" />
+
+    <select name="role" required class="w-full p-2 border rounded">
+      <option value="" disabled selected>Select your role</option>
+      <option value="undergrad">Undergrad</option>
+      <option value="master">Master</option>
+      <option value="phd">PhD</option>
+      <option value="employee">Employee</option>
+      <option value="professor">Professor</option>
+    </select>
+
+    <input name="major" placeholder="Major (if applicable)" class="w-full p-2 border rounded" />
+
+    <button class="w-full bg-green-500 text-white p-2 rounded">Sign Up</button>
+  </form>
+  {% with messages = get_flashed_messages() %}
+    {% if messages %}
+      <div class="text-red-500 mt-4">{{ messages[0] }}</div>
+    {% endif %}
+  {% endwith %}
+</body>
+</html>
