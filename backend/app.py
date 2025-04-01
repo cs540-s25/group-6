@@ -18,8 +18,8 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///resource_sharing.db'
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME', '')
-app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD', '')
+app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME', 'nayoungchoi95@gmail.com')
+app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD', 'fphvsknewtsozgrx')
 
 # Enable CORS for the React frontend
 CORS(app, resources={r"/*": {"origins": "http://localhost:3000"}}, supports_credentials=True)
@@ -339,8 +339,8 @@ def api_create_food_listing():
     
     # Create new food listing
     new_food = FoodListing(
-        #provider_id=user.user_id,
-        provider_id=user['user_id'],
+        provider_id=user.user_id,
+        #provider_id=user_session['user_id'],
         title=data.get('title'),
         description=data.get('description'),
         food_type=data.get('food_type'),
@@ -807,7 +807,6 @@ def add_test_data():
 
 @app.route('/api/food-postings', methods=['GET'])
 def get_user_food_postings():
-    print('get_user_food_postings', user_session['user_id'])
     posted_food = FoodListing.query.filter_by(provider_id=user_session['user_id']).all()
     postings = [{
         'id': food.food_id,
@@ -815,17 +814,19 @@ def get_user_food_postings():
         'status': food.status,
         'created_at': food.created_at
     } for food in posted_food]
-    print(postings)
     return jsonify({'postings': postings}), 200
 
 @app.route('/api/food-interested', methods=['GET'])
 def get_user_food_interested():
-    print('get_user_food_interested', user_session['user_id'])
     interacted_food = FoodListing.query.filter(
-        FoodListing.id.in_(
+        FoodListing.food_id.in_(
             [chat.food_id for chat in Chat.query.filter_by(sender_id=user_session['user_id']).all()]
         )
     ).all()
+    chats = Chat.query.filter_by(sender_id=user_session['user_id']).all()
+    print('user_session:', user_session['user_id'])
+    print('interacted_food:', interacted_food)
+    print('chats:', chats)
 
     food_list = [{
         'id': food.food_id,
