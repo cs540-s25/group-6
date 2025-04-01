@@ -45,34 +45,18 @@ const FoodDetailPage = () => {
     console.log('Sharing food item:', food);
   };
 
-  const handleReserve = async () => {
-    if (!currentUser) {
-      navigate('/login');
-      return;
-    }
-
-    try {
-      const reservationData = {
-        pickup_time: new Date().toISOString()
-      };
-
-      const response = await apiService.reserveFood(id, reservationData);
-      // Handle successful reservation
-      navigate('/');
-    } catch (err) {
-      console.error('Error reserving food:', err);
-      setError('Failed to reserve food item');
-    }
-  };
-
   const handleContactOwner = () => {
     if (!currentUser) {
-      navigate('/login');
+      navigate('/login');  // 로그인되지 않은 경우 로그인 페이지로 리다이렉트
       return;
     }
 
-    // Navigate to messages or open a message modal
-    console.log('Contact owner functionality to be implemented');
+    if (food) {
+      // food_id만 넘기기
+      navigate(`/chat/${food.food_id}`);
+    } else {
+      console.error('Food item data is missing');
+    }
   };
 
   // Helper function to format date
@@ -131,7 +115,7 @@ const FoodDetailPage = () => {
     return (
       <div className="bg-gray-50 min-h-screen p-4">
         <button
-          onClick={() => navigate('/')}
+          onClick={() => navigate('/home')}
           className="flex items-center text-blue-600 mb-6 hover:text-blue-800"
         >
           <ArrowLeft size={16} className="mr-1" />
@@ -150,7 +134,7 @@ const FoodDetailPage = () => {
       <div className="sticky top-0 bg-white shadow-sm z-10">
         <div className="container mx-auto p-4 flex items-center justify-between">
           <button
-            onClick={() => navigate('/')}
+            onClick={() => navigate('/home')}
             className="flex items-center text-gray-600"
           >
             <ArrowLeft size={20} />
@@ -281,15 +265,6 @@ const FoodDetailPage = () => {
             </div>
           </div>
         </div>
-      </div>
-
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4">
-        <button
-          onClick={handleReserve}
-          className="w-full bg-blue-500 text-white py-3 rounded-lg font-medium hover:bg-blue-600"
-        >
-          Reserve This Item
-        </button>
       </div>
     </div>
   );
