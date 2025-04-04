@@ -10,6 +10,8 @@ import ResendVerificationPage from './pages/ResendVerificationPage';
 import PostUploadPage from './pages/PostUploadPage';
 import PostViewingPage from './pages/PostViewingPage';
 import ProfilePage from './pages/ProfilePage';
+import ChatPage from './pages/ChatPage';
+import ChatListPage from './pages/ChatListPage';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 
 const ProtectedRoute = ({ children }) => {
@@ -52,6 +54,8 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+      <Route path="/chat-list/:userId" element={<ChatListPage />} />
+      <Route path="/chat/:foodId" element={<ChatPage />} />
     </Routes>
   );
 }
