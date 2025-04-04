@@ -12,7 +12,7 @@ const MainPage = () => {
   const { currentUser, logout } = useAuth();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
-  const [notifications, setNotifications] = useState(3);
+  const [notifications, setNotifications] = useState(0);
   const [activeTab, setActiveTab] = useState('recommended');
   const [showFilters, setShowFilters] = useState(false);
   const [favorites, setFavorites] = useState([]);
@@ -335,6 +335,7 @@ const handleCategoryClick = (categoryName) => {
     }
   };
 
+
   // Add these with your other handler functions
   const toggleMap = () => {
     setShowMap(!showMap);
@@ -352,6 +353,14 @@ const handleLocationSelect = (location) => {
   fetchFoodListings();
 };
 
+  const handleChatList = () => {
+    if (currentUser && currentUser.user_id) {
+      // Navigate to the chat list for the current user
+      navigate(`/chat-list/${currentUser.user_id}`);
+    } else {
+      console.error('User not authenticated');
+    }
+  };    
 
   return (
     <div className="app-container">
@@ -625,7 +634,7 @@ const handleLocationSelect = (location) => {
           <button className="add-listing-button" onClick={handleAddPost}>
             <Plus size={24} />
           </button>
-          <button className="nav-button">
+          <button className="nav-button" onClick={handleChatList}>
             <MessageCircle size={20} />
             <span>Messages</span>
             {notifications > 0 && <span className="nav-badge">{notifications}</span>}

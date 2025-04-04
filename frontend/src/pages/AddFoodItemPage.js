@@ -79,7 +79,7 @@ const AddFoodItemPage = () => {
 
       // Navigate back to home page after a delay
       setTimeout(() => {
-        navigate('/');
+        navigate('/home');
       }, 2000);
     } catch (err) {
       console.error('Error adding food item:', err);
@@ -110,7 +110,7 @@ const AddFoodItemPage = () => {
     <div className="bg-gray-50 min-h-screen py-6 px-4">
       <div className="max-w-lg mx-auto">
         <button
-          onClick={() => navigate('/')}
+          onClick={() => navigate('/home')}
           className="flex items-center text-blue-600 mb-6 hover:text-blue-800"
         >
           <ArrowLeft size={16} className="mr-1" />

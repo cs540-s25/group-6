@@ -1,5 +1,28 @@
-// src/services/apiService.js
+// src/services/apiService.js - fully updated with improved authentication
 const API_BASE_URL = 'http://localhost:5000';
+
+// Helper function to handle API responses
+const handleResponse = async (response) => {
+  const contentType = response.headers.get('content-type');
+
+  if (!contentType || !contentType.includes('application/json')) {
+    // Handle non-JSON responses
+    if (!response.ok) {
+      throw new Error(`API request failed with status ${response.status}`);
+    }
+    return { success: true };
+  }
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    // Extract error message from response or use status text
+    const errorMessage = data?.error || response.statusText;
+    throw new Error(errorMessage);
+  }
+
+  return data;
+};
 
 /**
  * API Service for handling all backend requests
@@ -14,7 +37,7 @@ class ApiService {
    */
   async register(userData) {
     try {
-      const response = await fetch(`${API_BASE_URL}/signup`, {
+      const response = await fetch(`${API_BASE_URL}/api/signup`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -23,12 +46,7 @@ class ApiService {
         credentials: 'include',
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Registration failed');
-      }
-
-      return await response.json();
+      return await handleResponse(response);
     } catch (error) {
       console.error('Registration error:', error);
       throw error;
@@ -43,7 +61,7 @@ class ApiService {
    */
   async login(email, password) {
     try {
-      const response = await fetch(`${API_BASE_URL}/login`, {
+      const response = await fetch(`${API_BASE_URL}/api/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -52,12 +70,7 @@ class ApiService {
         credentials: 'include',
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Login failed');
-      }
-
-      return await response.json();
+      return await handleResponse(response);
     } catch (error) {
       console.error('Login error:', error);
       throw error;
@@ -70,12 +83,12 @@ class ApiService {
    */
   async logout() {
     try {
-      const response = await fetch(`${API_BASE_URL}/logout`, {
+      const response = await fetch(`${API_BASE_URL}/api/logout`, {
         method: 'GET',
         credentials: 'include',
       });
 
-      return await response.json();
+      return await handleResponse(response);
     } catch (error) {
       console.error('Logout error:', error);
       throw error;
@@ -89,7 +102,7 @@ class ApiService {
    */
   async requestPasswordReset(email) {
     try {
-      const response = await fetch(`${API_BASE_URL}/reset_password_request`, {
+      const response = await fetch(`${API_BASE_URL}/api/reset_password_request`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -97,7 +110,7 @@ class ApiService {
         body: JSON.stringify({ email }),
       });
 
-      return await response.json();
+      return await handleResponse(response);
     } catch (error) {
       console.error('Password reset request error:', error);
       throw error;
@@ -120,7 +133,7 @@ class ApiService {
         body: JSON.stringify({ password }),
       });
 
-      return await response.json();
+      return await handleResponse(response);
     } catch (error) {
       console.error('Password reset error:', error);
       throw error;
@@ -140,9 +153,10 @@ class ApiService {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ email }),
+        credentials: 'include',
       });
 
-      return await response.json();
+      return await handleResponse(response);
     } catch (error) {
       console.error('Resend verification error:', error);
       throw error;
@@ -167,13 +181,9 @@ class ApiService {
       const response = await fetch(`${API_BASE_URL}/api/food_listings?${params.toString()}`, {
         credentials: 'include',
       });
-  
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to fetch food listings');
-      }
-  
-      return await response.json();
+
+      return await handleResponse(response);
+
     } catch (error) {
       console.error('Get food listings error:', error);
       throw error;
@@ -196,7 +206,7 @@ class ApiService {
         credentials: 'include',
       });
 
-      return await response.json();
+      return await handleResponse(response);
     } catch (error) {
       console.error('Create food listing error:', error);
       throw error;
@@ -214,7 +224,7 @@ class ApiService {
         credentials: 'include',
       });
 
-      return await response.json();
+      return await handleResponse(response);
     } catch (error) {
       console.error(`Get food listing ${id} error:`, error);
       throw error;
@@ -238,7 +248,7 @@ class ApiService {
         credentials: 'include',
       });
 
-      return await response.json();
+      return await handleResponse(response);
     } catch (error) {
       console.error(`Update food listing ${id} error:`, error);
       throw error;
@@ -257,7 +267,7 @@ class ApiService {
         credentials: 'include',
       });
 
-      return await response.json();
+      return await handleResponse(response);
     } catch (error) {
       console.error(`Delete food listing ${id} error:`, error);
       throw error;
@@ -281,7 +291,7 @@ class ApiService {
         credentials: 'include',
       });
 
-      return await response.json();
+      return await handleResponse(response);
     } catch (error) {
       console.error(`Reserve food ${foodId} error:`, error);
       throw error;
@@ -298,9 +308,12 @@ class ApiService {
     try {
       const response = await fetch(`${API_BASE_URL}/api/user/profile`, {
         credentials: 'include',
+        headers: {
+          'Cache-Control': 'no-cache',
+        },
       });
 
-      return await response.json();
+      return await handleResponse(response);
     } catch (error) {
       console.error('Get current user error:', error);
       throw error;
@@ -322,11 +335,9 @@ class ApiService {
         body: JSON.stringify(profileData),
         credentials: 'include',
       });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Profile update failed');
-      }
-      return await response.json();
+
+      return await handleResponse(response);
+
     } catch (error) {
       console.error('Update profile error:', error);
       throw error;
@@ -351,9 +362,103 @@ class ApiService {
         credentials: 'include',
       });
 
-      return await response.json();
+      return await handleResponse(response);
     } catch (error) {
       console.error('Add rating error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get chat messages between the current user and the provider
+   * @param {number} foodId - The food listing ID
+   * @returns {Promise} - Response with chat messages
+   */
+  async getChatMessages(foodId) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/chat/${foodId}`, {
+        credentials: 'include',
+      });
+
+      return await handleResponse(response);
+    } catch (error) {
+      console.error('Error fetching chat messages:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Send a chat message
+   * @param {Object} messageData - The message data
+   * @returns {Promise} - Response with sent message
+   */
+  async sendChatMessage(messageData) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/chat/send`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(messageData),
+        credentials: 'include',
+      });
+
+      return await handleResponse(response);
+    } catch (error) {
+      console.error('Error sending message:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get the food postings made by the current user
+   * @returns {Promise} - Response with food postings
+   */
+  async getUserFoodPostings() {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/food-postings`, {
+        credentials: 'include',
+      });
+
+      return await handleResponse(response);
+    } catch (error) {
+      console.error('Error fetching food postings:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get the food items the current user has interacted with (either posted or started a conversation)
+   * @returns {Promise} - Response with interacted food items
+   */
+  async getUserFoodInteractions() {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/food-interested`, {
+        credentials: 'include',
+      });
+
+      return await handleResponse(response);
+    } catch (error) {
+      console.error('Error fetching food interactions:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get the chat list for a user
+   * @param {number} userId - The user ID to fetch chats for
+   * @returns {Promise} - Response with chat list
+   */
+  async getChatList(userId) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/chat-list/${userId}`, {
+        method: 'GET',
+        credentials: 'include',
+      });
+
+      return await handleResponse(response);
+    } catch (error) {
+      console.error('Get chat list error:', error);
       throw error;
     }
   }

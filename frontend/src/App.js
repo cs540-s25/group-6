@@ -12,6 +12,8 @@ import FoodDetailPage from './pages/FoodDetailPage';
 import ProfilePage from './pages/ProfilePage';
 import LocationMap from './pages/LocationMap';
 import LocationModal from './pages/LocationModal';
+import ChatPage from './pages/ChatPage';
+import ChatListPage from './pages/ChatListPage';
 
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 
@@ -56,6 +58,8 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+      <Route path="/chat-list/:userId" element={<ChatListPage />} />
+      <Route path="/chat/:foodId" element={<ChatPage />} />
     </Routes>
   );
 }

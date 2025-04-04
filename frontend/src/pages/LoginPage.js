@@ -7,12 +7,14 @@ const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setLoading(true);
 
     try {
       await login(email, password);
@@ -20,7 +22,9 @@ const LoginPage = () => {
       navigate('/home');
     } catch (err) {
       console.error('Login error:', err);
-      setError('Invalid credentials or account not verified');
+      setError('Invalid credentials. Please check your email and password.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -46,7 +50,22 @@ const LoginPage = () => {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
-        <button type="submit" className="w-full bg-blue-500 text-white p-2 rounded">Log In</button>
+        <button
+          type="submit"
+          disabled={loading}
+          className={`w-full ${loading ? 'bg-blue-300' : 'bg-blue-500 hover:bg-blue-600'} text-white p-2 rounded`}
+        >
+          {loading ? 'Logging in...' : 'Log In'}
+        </button>
+
+        <div className="flex justify-between mt-2 text-sm">
+          <Link to="/signup" className="text-blue-600 hover:underline">
+            Create an account
+          </Link>
+          <Link to="/reset-password-request" className="text-blue-600 hover:underline">
+            Forgot password?
+          </Link>
+        </div>
       </form>
       {error && <div className="text-red-500 mt-4">{error}</div>}
     </div>
