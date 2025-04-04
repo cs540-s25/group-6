@@ -1,6 +1,28 @@
-// src/services/apiService.js - updating relevant methods
+// src/services/apiService.js - fully updated with improved authentication
 const API_BASE_URL = 'http://localhost:5000';
 
+// Helper function to handle API responses
+const handleResponse = async (response) => {
+  const contentType = response.headers.get('content-type');
+
+  if (!contentType || !contentType.includes('application/json')) {
+    // Handle non-JSON responses
+    if (!response.ok) {
+      throw new Error(`API request failed with status ${response.status}`);
+    }
+    return { success: true };
+  }
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    // Extract error message from response or use status text
+    const errorMessage = data?.error || response.statusText;
+    throw new Error(errorMessage);
+  }
+
+  return data;
+};
 
 /**
  * API Service for handling all backend requests
@@ -24,12 +46,7 @@ class ApiService {
         credentials: 'include',
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Registration failed');
-      }
-
-      return await response.json();
+      return await handleResponse(response);
     } catch (error) {
       console.error('Registration error:', error);
       throw error;
@@ -53,12 +70,7 @@ class ApiService {
         credentials: 'include',
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Login failed');
-      }
-
-      return await response.json();
+      return await handleResponse(response);
     } catch (error) {
       console.error('Login error:', error);
       throw error;
@@ -76,7 +88,7 @@ class ApiService {
         credentials: 'include',
       });
 
-      return await response.json();
+      return await handleResponse(response);
     } catch (error) {
       console.error('Logout error:', error);
       throw error;
@@ -90,7 +102,7 @@ class ApiService {
    */
   async requestPasswordReset(email) {
     try {
-      const response = await fetch(`${API_BASE_URL}/reset_password_request`, {
+      const response = await fetch(`${API_BASE_URL}/api/reset_password_request`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -98,7 +110,7 @@ class ApiService {
         body: JSON.stringify({ email }),
       });
 
-      return await response.json();
+      return await handleResponse(response);
     } catch (error) {
       console.error('Password reset request error:', error);
       throw error;
@@ -121,7 +133,7 @@ class ApiService {
         body: JSON.stringify({ password }),
       });
 
-      return await response.json();
+      return await handleResponse(response);
     } catch (error) {
       console.error('Password reset error:', error);
       throw error;
@@ -141,9 +153,10 @@ class ApiService {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ email }),
+        credentials: 'include',
       });
 
-      return await response.json();
+      return await handleResponse(response);
     } catch (error) {
       console.error('Resend verification error:', error);
       throw error;
@@ -162,7 +175,7 @@ class ApiService {
         credentials: 'include',
       });
 
-      return await response.json();
+      return await handleResponse(response);
     } catch (error) {
       console.error('Get food listings error:', error);
       throw error;
@@ -185,7 +198,7 @@ class ApiService {
         credentials: 'include',
       });
 
-      return await response.json();
+      return await handleResponse(response);
     } catch (error) {
       console.error('Create food listing error:', error);
       throw error;
@@ -203,7 +216,7 @@ class ApiService {
         credentials: 'include',
       });
 
-      return await response.json();
+      return await handleResponse(response);
     } catch (error) {
       console.error(`Get food listing ${id} error:`, error);
       throw error;
@@ -227,7 +240,7 @@ class ApiService {
         credentials: 'include',
       });
 
-      return await response.json();
+      return await handleResponse(response);
     } catch (error) {
       console.error(`Update food listing ${id} error:`, error);
       throw error;
@@ -246,7 +259,7 @@ class ApiService {
         credentials: 'include',
       });
 
-      return await response.json();
+      return await handleResponse(response);
     } catch (error) {
       console.error(`Delete food listing ${id} error:`, error);
       throw error;
@@ -270,7 +283,7 @@ class ApiService {
         credentials: 'include',
       });
 
-      return await response.json();
+      return await handleResponse(response);
     } catch (error) {
       console.error(`Reserve food ${foodId} error:`, error);
       throw error;
@@ -287,9 +300,12 @@ class ApiService {
     try {
       const response = await fetch(`${API_BASE_URL}/api/user/profile`, {
         credentials: 'include',
+        headers: {
+          'Cache-Control': 'no-cache',
+        },
       });
 
-      return await response.json();
+      return await handleResponse(response);
     } catch (error) {
       console.error('Get current user error:', error);
       throw error;
@@ -312,7 +328,7 @@ class ApiService {
         credentials: 'include',
       });
 
-      return await response.json();
+      return await handleResponse(response);
     } catch (error) {
       console.error('Update profile error:', error);
       throw error;
@@ -337,7 +353,7 @@ class ApiService {
         credentials: 'include',
       });
 
-      return await response.json();
+      return await handleResponse(response);
     } catch (error) {
       console.error('Add rating error:', error);
       throw error;
@@ -354,7 +370,8 @@ class ApiService {
       const response = await fetch(`${API_BASE_URL}/api/chat/${foodId}`, {
         credentials: 'include',
       });
-      return await response.json();
+
+      return await handleResponse(response);
     } catch (error) {
       console.error('Error fetching chat messages:', error);
       throw error;
@@ -376,7 +393,8 @@ class ApiService {
         body: JSON.stringify(messageData),
         credentials: 'include',
       });
-      return await response.json();
+
+      return await handleResponse(response);
     } catch (error) {
       console.error('Error sending message:', error);
       throw error;
@@ -393,12 +411,7 @@ class ApiService {
         credentials: 'include',
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to load food postings');
-      }
-
-      return await response.json();
+      return await handleResponse(response);
     } catch (error) {
       console.error('Error fetching food postings:', error);
       throw error;
@@ -415,42 +428,31 @@ class ApiService {
         credentials: 'include',
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to load food interactions');
-      }
-
-      return await response.json();
+      return await handleResponse(response);
     } catch (error) {
       console.error('Error fetching food interactions:', error);
       throw error;
     }
   }
 
-/**
- * Get the chat list for a user
- * @param {number} userId - The user ID to fetch chats for
- * @returns {Promise} - Response with chat list
- */
-async getChatList(userId) {
-  try {
-    const response = await fetch(`${API_BASE_URL}/api/chat-list/${userId}`, {
-      method: 'GET',
-      credentials: 'include',
-    });
+  /**
+   * Get the chat list for a user
+   * @param {number} userId - The user ID to fetch chats for
+   * @returns {Promise} - Response with chat list
+   */
+  async getChatList(userId) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/chat-list/${userId}`, {
+        method: 'GET',
+        credentials: 'include',
+      });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || 'Failed to load chat list');
+      return await handleResponse(response);
+    } catch (error) {
+      console.error('Get chat list error:', error);
+      throw error;
     }
-
-    return await response.json();
-  } catch (error) {
-    console.error('Get chat list error:', error);
-    throw error;
   }
-}    
-    
 }
 
 // Create and export a single instance

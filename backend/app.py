@@ -198,6 +198,7 @@ def api_signup():
         'user': user_to_dict(user)
     }), 201
 
+
 @app.route('/api/login', methods=['POST'])
 def api_login():
     data = request.json
@@ -208,10 +209,10 @@ def api_login():
     if user and check_password_hash(user.password_hash, password):
         session['user_id'] = user.user_id
 
-        global user_session # [!]
-        user_session["user_id"] = user.id  # [!] Store user ID in session
-        user_session["username"] = username  # [!] Store username in session (optional)
-        
+        global user_session  # [!]
+        user_session["user_id"] = user.user_id  # [!] Store user ID in session
+        user_session["username"] = f"{user.first_name} {user.last_name}"  # [!] Store username in session
+
         return jsonify({
             'message': 'Logged in successfully',
             'user': user_to_dict(user)
