@@ -425,6 +425,30 @@ class ApiService {
       throw error;
     }
   }
+
+/**
+ * Get the chat list for a user
+ * @param {number} userId - The user ID to fetch chats for
+ * @returns {Promise} - Response with chat list
+ */
+async getChatList(userId) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/chat-list/${userId}`, {
+      method: 'GET',
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to load chat list');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Get chat list error:', error);
+    throw error;
+  }
+}    
     
 }
 

@@ -760,6 +760,35 @@ def get_chat_list(user_id):
 
     return jsonify({'chats': result}), 200
 
+@app.route('/api/food-postings', methods=['GET'])
+def get_user_food_postings():
+    posted_food = FoodListing.query.filter_by(provider_id=user_session['user_id']).all()
+    postings = [{
+        'id': food.food_id,
+        'title': food.title,
+        'status': food.status,
+        'created_at': food.created_at
+    } for food in posted_food]
+    return jsonify({'postings': postings}), 200
+
+@app.route('/api/food-interested', methods=['GET'])
+def get_user_food_interested():
+    interacted_food = FoodListing.query.filter(
+        FoodListing.food_id.in_(
+            [chat.food_id for chat in Chat.query.filter_by(sender_id=user_session['user_id']).all()]
+        )
+    ).all()
+    chats = Chat.query.filter_by(sender_id=user_session['user_id']).all()
+
+    food_list = [{
+        'id': food.food_id,
+        'title': food.title,
+        'status': food.status,
+        'created_at': food.created_at
+    } for food in interacted_food]
+
+    return jsonify({'interacted': food_list}), 200
+
 ## To add test data
 @app.route('/add_test_data', methods=['GET'])
 def add_test_data():
@@ -805,44 +834,11 @@ def add_test_data():
 
     return jsonify({'message': 'Test data added successfully!'}), 200
 
-@app.route('/api/food-postings', methods=['GET'])
-def get_user_food_postings():
-    posted_food = FoodListing.query.filter_by(provider_id=user_session['user_id']).all()
-    postings = [{
-        'id': food.food_id,
-        'title': food.title,
-        'status': food.status,
-        'created_at': food.created_at
-    } for food in posted_food]
-    return jsonify({'postings': postings}), 200
-
-@app.route('/api/food-interested', methods=['GET'])
-def get_user_food_interested():
-    interacted_food = FoodListing.query.filter(
-        FoodListing.food_id.in_(
-            [chat.food_id for chat in Chat.query.filter_by(sender_id=user_session['user_id']).all()]
-        )
-    ).all()
-    chats = Chat.query.filter_by(sender_id=user_session['user_id']).all()
-    print('user_session:', user_session['user_id'])
-    print('interacted_food:', interacted_food)
-    print('chats:', chats)
-
-    food_list = [{
-        'id': food.food_id,
-        'title': food.title,
-        'status': food.status,
-        'created_at': food.created_at
-    } for food in interacted_food]
-
-    return jsonify({'interacted': food_list}), 200
-
-
 if __name__ == '__main__':
     with app.app_context():
-        db.drop_all()
+        #db.drop_all()
         db.create_all()
         setup_roles()
-        add_test_data()
+        #add_test_data()
     app.run(debug=True)
 
