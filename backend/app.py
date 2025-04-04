@@ -13,13 +13,13 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY', 'your_default_secret_key')
+app.secret_key = os.environ.get('SECRET_KEY')
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///resource_sharing.db'
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME', 'your_email@gmail.com')
-app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD', 'your_app_password')
+app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
+app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
 
 # Enable CORS for the React frontend
 CORS(app, resources={r"/*": {"origins": "http://localhost:3000"}}, supports_credentials=True)
@@ -156,6 +156,7 @@ def api_signup():
     user = User(
         email=email,
         password_hash=hashed_pw,
+    
         first_name=data.get('first_name'),
         last_name=data.get('last_name'),
         phone_number=data.get('phone_number'),
@@ -163,8 +164,10 @@ def api_signup():
         verification_token=token,
         role=role
     )
+
     db.session.add(user)
     db.session.commit()
+    
 
     # Send verification email
     confirm_url = url_for('verify_email', token=token, _external=True)
@@ -247,52 +250,80 @@ def api_get_profile():
 
 @app.route('/api/user/profile', methods=['PUT'])
 def api_update_profile():
-    user = get_current_user()
-    if not user:
-        return jsonify({'error': 'Not authenticated'}), 401
+    try:
+        user = get_current_user()
+        if not user:
+            return jsonify({'error': 'Not authenticated'}), 401
 
-    data = request.json
+        data = request.json
+        
+        # Validate location data if provided
+        if 'latitude' in data or 'longitude' in data:
+            if 'latitude' not in data or 'longitude' not in data:
+                return jsonify({'error': 'Both latitude and longitude must be provided together'}), 400
+            
+            try:
+                lat = float(data['latitude'])
+                lng = float(data['longitude'])
+                if not (-90 <= lat <= 90) or not (-180 <= lng <= 180):
+                    raise ValueError
+            except (ValueError, TypeError):
+                return jsonify({'error': 'Invalid latitude/longitude values'}), 400
 
-    # Update fields
-    if 'first_name' in data:
-        user.first_name = data['first_name']
-    if 'last_name' in data:
-        user.last_name = data['last_name']
-    if 'phone_number' in data:
-        user.phone_number = data['phone_number']
-    if 'major' in data:
-        user.major = data['major']
-    if 'address' in data:
-        user.address = data['address']
-    if 'latitude' in data:
-        user.latitude = data['latitude']
-    if 'longitude' in data:
-        user.longitude = data['longitude']
+        # Update all allowed fields
+        update_fields = [
+            'first_name', 'last_name', 'phone_number',
+            'major', 'address', 'latitude', 'longitude'
+        ]
 
-    db.session.commit()
-    return jsonify({'message': 'Profile updated successfully', 'user': user_to_dict(user)}), 200
+        updates = {}
+        for field in update_fields:
+            if field in data:
+                setattr(user, field, data[field])
+                updates[field] = data[field]
 
+        db.session.commit()
+        
+        # Return the updated user data
+        return jsonify({
+            'message': 'Profile updated successfully',
+            'updates': updates,
+            'user': user_to_dict(user)
+        }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f'Profile update error: {str(e)}')
+        return jsonify({'error': 'Failed to update profile'}), 500
 
 @app.route('/api/food_listings', methods=['GET'])
-def api_get_food_listings():
-    # Get query parameters for filtering
-    status = request.args.get('status', 'available')
-    food_type = request.args.get('food_type')
+def get_food_listings():
+    try:
+        food_type = request.args.get('food_type')
+        search_query = request.args.get('q')
+        status = request.args.get('status', 'available')
 
-    # Build query
-    query = FoodListing.query.filter_by(status=status)
+        query = FoodListing.query.filter_by(status=status)
 
-    if food_type:
-        query = query.filter_by(food_type=food_type)
+        # Exact match filtering (case-insensitive)
+        if food_type and food_type.lower() != 'all':
+            query = query.filter(FoodListing.food_type.ilike(food_type))  # Removed wildcards
+        
+        if search_query:
+            search = f"%{search_query}%"
+            query = query.filter(
+                FoodListing.title.ilike(search) |
+                FoodListing.description.ilike(search)
+            )
 
-    # Get all matching food listings
-    food_listings = query.all()
+        food_listings = query.order_by(FoodListing.created_at.desc()).all()
+        
+        return jsonify({
+            'food_listings': [food_listing_to_dict(food) for food in food_listings]
+        }), 200
 
-    # Convert to dictionary format
-    results = [food_listing_to_dict(food) for food in food_listings]
-
-    return jsonify({'food_listings': results}), 200
-
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/food_listings', methods=['POST'])
 def api_create_food_listing():
@@ -598,6 +629,14 @@ def reset_password(token):
             return redirect(url_for('login'))
     return render_template('reset_password.html')
 
+# ALTERNATIVE VERSION (using URL parameters)
+@app.route('/api/sometemp/<category>/', methods=['GET'], strict_slashes=False)
+def filter_items(category):
+    # Your existing implementation
+    query = FoodListing.query.filter_by(status='available')
+    query = query.filter(FoodListing.food_type.ilike(f'%{category}%'))
+    food_listings = query.order_by(FoodListing.created_at.desc()).all()
+    return jsonify({'food_listings': [food_listing_to_dict(food) for food in food_listings]})
 
 def setup_roles():
     # Seed roles if not present
@@ -606,6 +645,7 @@ def setup_roles():
         if not Role.query.filter_by(name=r).first():
             db.session.add(Role(name=r))
     db.session.commit()
+
 
 
 if __name__ == '__main__':

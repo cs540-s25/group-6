@@ -155,12 +155,24 @@ class ApiService {
    * Get all food listings
    * @returns {Promise} - Response with food listings
    */
-  async getFoodListings() {
+  async getFoodListings(filters = {}) {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/food_listings`, {
+      const params = new URLSearchParams();
+      
+      // Add filters as query parameters
+      if (filters.status) params.append('status', filters.status);
+      if (filters.food_type) params.append('food_type', filters.food_type);
+      if (filters.q) params.append('q', filters.q);
+  
+      const response = await fetch(`${API_BASE_URL}/api/food_listings?${params.toString()}`, {
         credentials: 'include',
       });
-
+  
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to fetch food listings');
+      }
+  
       return await response.json();
     } catch (error) {
       console.error('Get food listings error:', error);
@@ -310,7 +322,10 @@ class ApiService {
         body: JSON.stringify(profileData),
         credentials: 'include',
       });
-
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Profile update failed');
+      }
       return await response.json();
     } catch (error) {
       console.error('Update profile error:', error);

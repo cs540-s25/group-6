@@ -10,6 +10,9 @@ import ResendVerificationPage from './pages/ResendVerificationPage';
 import AddFoodItemPage from './pages/AddFoodItemPage';
 import FoodDetailPage from './pages/FoodDetailPage';
 import ProfilePage from './pages/ProfilePage';
+import LocationMap from './pages/LocationMap';
+import LocationModal from './pages/LocationModal';
+
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 
 // Protected route component
