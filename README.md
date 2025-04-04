@@ -1,5 +1,30 @@
 # 🧑‍💻 Group 6's team project
 
+<img width="1000" alt="Screenshot 2025-04-04 at 11 01 08 AM" src="https://github.com/user-attachments/assets/94177b36-03a2-4b0d-b1c5-15d14d7fef3f" />
+
+### How to deploy on your local machine
+
+1. Enter your Google email address for `YOUR_MAIL_USERNAME` and the app password created from here for `YOUR_MAIL_PASSWORD`.
+
+```
+app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME', 'YOUR_MAIL_USERNAME')
+app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD', 'YOUR_MAIL_PASSWORD')
+```
+
+2. Run the Flask backend.
+
+```
+cd backend/
+python app.py
+```
+
+3. Run the JS frontend.
+
+```
+cd frontend/
+npm start
+```
+
 ## 1️⃣ Project Proposal
 - Project Overview
 > ReSource is a comprehensive platform designed to address resource inequality by connecting those with surplus resources to those in need. The platform will be developed in a phased approach, initially focusing on food redistribution to combat hunger, followed by book sharing to improve access to educational materials, with potential future expansions to furniture redistribution and financial contributions. By leveraging technology and community engagement, ReSource creates an efficient ecosystem for resource redistribution, reducing waste while addressing fundamental needs.

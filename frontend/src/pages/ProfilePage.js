@@ -1,7 +1,7 @@
 // src/pages/ProfilePage.js
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, LogOut, User, Mail, Phone, BookOpen, MapPin, Edit, Package } from 'lucide-react';
+import { ArrowLeft, LogOut, Edit, Package, Mail, Phone, BookOpen, MapPin } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import apiService from '../services/apiService';
 
@@ -9,7 +9,8 @@ const ProfilePage = () => {
   const { currentUser, logout, updateProfile } = useAuth();
   const navigate = useNavigate();
 
-  const [userFoodListings, setUserFoodListings] = useState([]);
+  const [userFoodPostings, setUserFoodPostings] = useState([]);
+  const [userFoodInterested, setUserFoodInterested] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [isEditing, setIsEditing] = useState(false);
@@ -32,35 +33,38 @@ const ProfilePage = () => {
         address: currentUser.address || ''
       });
 
-      // Fetch user's food listings
-      fetchUserFoodListings();
+      // Fetch user's food postings and food interactions
+      fetchUserFoodPostings();
+      fetchUserFoodInteractions();
     }
   }, [currentUser]);
 
-  const fetchUserFoodListings = async () => {
+const fetchUserFoodPostings = async () => {
+  try {
+    setLoading(true);
+    const response = await apiService.getUserFoodPostings();
+    console.log('Food postings response:', response); // Debugging
+    if (response && response.postings) {
+      setUserFoodPostings(response.postings);
+    } else {
+      console.error('Unexpected response format:', response);
+    }
+  } catch (err) {
+    console.error('Error fetching user food postings:', err);
+    setError('Failed to load your food postings');
+  } finally {
+    setLoading(false);
+  }
+};
+
+  const fetchUserFoodInteractions = async () => {
     try {
       setLoading(true);
-      // We would need to add an API endpoint to get user's food listings
-      // This is a placeholder for now
-      const mockUserFoodListings = [
-        {
-          id: 1,
-          title: 'Homemade Cookies',
-          status: 'available',
-          created_at: new Date().toISOString()
-        },
-        {
-          id: 2,
-          title: 'Fresh Vegetables',
-          status: 'claimed',
-          created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
-        }
-      ];
-
-      setUserFoodListings(mockUserFoodListings);
+      const response = await apiService.getUserFoodInteractions();
+      setUserFoodInterested(response.interacted);
     } catch (err) {
-      console.error('Error fetching user food listings:', err);
-      setError('Failed to load your food listings');
+      console.error('Error fetching user food interactions:', err);
+      setError('Failed to load your food interactions');
     } finally {
       setLoading(false);
     }
@@ -93,6 +97,10 @@ const ProfilePage = () => {
     }
   };
 
+  const handleViewFoodDetail = (id) => {
+    navigate(`/food/${id}`);
+  };
+
   // Format date
   const formatDate = (dateString) => {
     if (!dateString) return '';
@@ -114,19 +122,13 @@ const ProfilePage = () => {
     <div className="bg-gray-50 min-h-screen">
       <div className="sticky top-0 bg-white shadow-sm z-10">
         <div className="container mx-auto p-4 flex items-center justify-between">
-          <button
-            onClick={() => navigate('/')}
-            className="flex items-center text-gray-600"
-          >
+          <button onClick={() => navigate('/home')} className="flex items-center text-gray-600">
             <ArrowLeft size={20} />
           </button>
 
           <h1 className="text-xl font-semibold text-center">My Profile</h1>
 
-          <button
-            onClick={handleLogout}
-            className="text-gray-600"
-          >
+          <button onClick={handleLogout} className="text-gray-600">
             <LogOut size={20} />
           </button>
         </div>
@@ -148,10 +150,7 @@ const ProfilePage = () => {
                 </div>
               </div>
 
-              <button
-                onClick={() => setIsEditing(!isEditing)}
-                className="bg-blue-50 hover:bg-blue-100 text-blue-600 p-2 rounded-full"
-              >
+              <button onClick={() => setIsEditing(!isEditing)} className="bg-blue-50 hover:bg-blue-100 text-blue-600 p-2 rounded-full">
                 <Edit size={18} />
               </button>
             </div>
@@ -222,19 +221,8 @@ const ProfilePage = () => {
                 </div>
 
                 <div className="flex space-x-3">
-                  <button
-                    type="button"
-                    onClick={() => setIsEditing(false)}
-                    className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 rounded-lg font-medium"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-lg font-medium"
-                  >
-                    Save Changes
-                  </button>
+                  <button type="button" onClick={() => setIsEditing(false)} className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 rounded-lg font-medium">Cancel</button>
+                  <button type="submit" className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-lg font-medium">Save Changes</button>
                 </div>
               </form>
             ) : (
@@ -275,43 +263,29 @@ const ProfilePage = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-md overflow-hidden">
+        {/* My Food Postings Section */}
+        <div className="bg-white rounded-xl shadow-md overflow-hidden mb-6">
           <div className="p-6">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-semibold text-gray-800">My Food Listings</h2>
-              <button
-                onClick={() => navigate('/add-food')}
-                className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-lg text-sm font-medium"
-              >
-                Add New
-              </button>
+              <h2 className="text-lg font-semibold text-gray-800">My Food Postings</h2>
             </div>
 
             {loading ? (
               <p className="text-gray-500 text-center p-4">Loading your listings...</p>
-            ) : userFoodListings.length === 0 ? (
+            ) : userFoodPostings.length === 0 ? (
               <div className="text-center py-6">
                 <Package size={48} className="mx-auto text-gray-300 mb-2" />
-                <p className="text-gray-500">You haven't shared any food items yet</p>
+                <p className="text-gray-500">You haven't posted any food items yet</p>
               </div>
             ) : (
               <div className="space-y-3">
-                {userFoodListings.map(item => (
+                {userFoodPostings.map(item => (
                   <div
                     key={item.id}
                     className="border border-gray-200 rounded-lg p-3 hover:border-blue-300 cursor-pointer"
-                    onClick={() => navigate(`/food/${item.id}`)}
+                    onClick={() => handleViewFoodDetail(item.id)}
                   >
-                    <div className="flex justify-between">
-                      <h3 className="font-medium">{item.title}</h3>
-                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                        item.status === 'available'
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-blue-100 text-blue-800'
-                      }`}>
-                        {item.status === 'available' ? 'Available' : 'Claimed'}
-                      </span>
-                    </div>
+                    <h3 className="font-medium">{item.title}</h3>
                     <p className="text-sm text-gray-500 mt-1">Posted on {formatDate(item.created_at)}</p>
                   </div>
                 ))}
@@ -319,6 +293,38 @@ const ProfilePage = () => {
             )}
           </div>
         </div>
+
+        {/* Food Interested Section */}
+        <div className="bg-white rounded-xl shadow-md overflow-hidden mb-6">
+          <div className="p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-semibold text-gray-800">Foods of Interest</h2>
+            </div>
+
+            {loading ? (
+              <p className="text-gray-500 text-center p-4">Loading your foods of interest...</p>
+            ) : userFoodInterested.length === 0 ? (
+              <div className="text-center py-6">
+                <Package size={48} className="mx-auto text-gray-300 mb-2" />
+                <p className="text-gray-500">You haven't shown interest in any food items yet</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {userFoodInterested.map(item => (
+                  <div
+                    key={item.id}
+                    className="border border-gray-200 rounded-lg p-3 hover:border-blue-300 cursor-pointer"
+                    onClick={() => handleViewFoodDetail(item.id)}
+                  >
+                    <h3 className="font-medium">{item.title}</h3>
+                    <p className="text-sm text-gray-500 mt-1">Posted on {formatDate(item.created_at)}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
       </div>
     </div>
   );
