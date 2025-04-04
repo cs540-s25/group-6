@@ -1,0 +1,178 @@
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-color);
+}
+
+.map-wrapper {
+    margin: 16px 0;
+    position: relative;
+  }
+  
+  .map-container {
+    height: 200px;
+    width: 100%;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    z-index: 1;
+  }
+  
+  .map-controls {
+    margin-top: 8px;
+    display: flex;
+    justify-content: center;
+  }
+  
+  .map-overlay {
+    position: absolute;
+    bottom: 5px;
+    right: 5px;
+    background: rgba(255, 255, 255, 0.8);
+    padding: 3px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    z-index: 1000;
+    color: #666;
+  }
+  
+  .location-button {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 14px;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+  }
+  
+  .location-button:hover {
+    background-color: #f5f5f5;
+  }
+  
+  .location-button:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+  
+  .location-selector {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 8px 12px;
+    background-color: #f5f5f5;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .location-selector:hover {
+    background-color: #e8e8e8;
+  }
+  
+  .location-details {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: #555;
+    font-size: 14px;
+  }
+  
+  /* Food Item Map Preview */
+  .food-item-map {
+    margin-top: 16px;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  
+  /* Location Modal */
+  .location-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+  }
+  
+  .location-modal-content {
+    background: white;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 500px;
+    max-height: 80vh;
+    overflow-y: auto;
+    padding: 20px;
+  }
+  
+  .location-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+  
+  .location-modal-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+  }
+  
+  .location-modal-map {
+    height: 300px;
+    margin-bottom: 16px;
+  }
+  
+  .location-address {
+    margin-top: 12px;
+    padding: 10px;
+    background-color: #f5f5f5;
+    border-radius: 8px;
+    font-size: 14px;
+  }
+  
+  /* Make sure Leaflet's default marker icons display correctly */
+  .leaflet-default-icon-path {
+    background-image: url(https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png) !important;
+  }
+  
+  .leaflet-default-shadow-path {
+    background-image: url(https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png) !important;
+  }
+
+  .location-saving-indicator {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: var(--primary-color);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 8px;
+    box-shadow: var(--shadow-md);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    z-index: 1000;
+  }
+  
+  @keyframes savingPulse {
+    0% { opacity: 0.8; transform: translateY(-5px); }
+    50% { opacity: 1; transform: translateY(0); }
+    100% { opacity: 0.8; transform: translateY(-5px); }
+  }
+  
+  .saving-animation {
+    animation: savingPulse 1.5s infinite;
+  }
