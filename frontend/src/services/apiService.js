@@ -1,5 +1,6 @@
-// src/services/apiService.js
-const API_BASE_URL = 'http://127.0.0.1:5000';
+// src/services/apiService.js - updating relevant methods
+const API_BASE_URL = 'http://localhost:5000';
+
 
 /**
  * API Service for handling all backend requests
@@ -14,7 +15,7 @@ class ApiService {
    */
   async register(userData) {
     try {
-      const response = await fetch(`${API_BASE_URL}/signup`, {
+      const response = await fetch(`${API_BASE_URL}/api/signup`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -43,7 +44,7 @@ class ApiService {
    */
   async login(email, password) {
     try {
-      const response = await fetch(`${API_BASE_URL}/login`, {
+      const response = await fetch(`${API_BASE_URL}/api/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -70,7 +71,7 @@ class ApiService {
    */
   async logout() {
     try {
-      const response = await fetch(`${API_BASE_URL}/logout`, {
+      const response = await fetch(`${API_BASE_URL}/api/logout`, {
         method: 'GET',
         credentials: 'include',
       });

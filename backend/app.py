@@ -49,7 +49,7 @@ class User(db.Model):
     last_name = db.Column(db.String, nullable=False)
     major = db.Column(db.String)
     phone_number = db.Column(db.String)
-    is_active = db.Column(db.Boolean, default=False)
+    is_active = db.Column(db.Boolean, default=True)  # Changed from False to True
     verification_token = db.Column(db.String)
     role_id = db.Column(db.Integer, db.ForeignKey('roles.role_id'))
     role = db.relationship("Role", back_populates="users")
@@ -175,7 +175,6 @@ def api_signup():
         return jsonify({'error': 'Email already registered.'}), 400
 
     hashed_pw = generate_password_hash(data.get('password'))
-    token = s.dumps(email, salt='email-confirm')
     role = Role.query.filter_by(name=data.get('role')).first()
 
     user = User(
@@ -185,20 +184,19 @@ def api_signup():
         last_name=data.get('last_name'),
         phone_number=data.get('phone_number'),
         major=data.get('major'),
-        verification_token=token,
-        role=role
+        role=role,
+        is_active=True  # User is active by default
     )
     db.session.add(user)
     db.session.commit()
 
-    # Send verification email
-    confirm_url = url_for('verify_email', token=token, _external=True)
-    msg = Message('Verify your email', sender=app.config['MAIL_USERNAME'], recipients=[email])
-    msg.body = f'Click the link to verify your email: {confirm_url}'
-    mail.send(msg)
+    # Log the user in immediately
+    session['user_id'] = user.user_id
 
-    return jsonify({'message': 'Verification email sent. Please check your inbox.'}), 201
-
+    return jsonify({
+        'message': 'Registration successful',
+        'user': user_to_dict(user)
+    }), 201
 
 @app.route('/api/login', methods=['POST'])
 def api_login():
@@ -207,7 +205,7 @@ def api_login():
     password = data.get('password')
 
     user = User.query.filter_by(email=email).first()
-    if user and user.is_active and check_password_hash(user.password_hash, password):
+    if user and check_password_hash(user.password_hash, password):
         session['user_id'] = user.user_id
 
         global user_session # [!]
@@ -219,7 +217,7 @@ def api_login():
             'user': user_to_dict(user)
         }), 200
 
-    return jsonify({'error': 'Invalid credentials or email not verified'}), 401
+    return jsonify({'error': 'Invalid credentials'}), 401
 
 
 @app.route('/api/logout', methods=['GET'])
@@ -246,25 +244,7 @@ def api_reset_password_request():
     return jsonify({'error': 'Email not found'}), 404
 
 
-@app.route('/api/resend_verification', methods=['POST'])
-def api_resend_verification():
-    data = request.json
-    email = data.get('email')
 
-    user = User.query.filter_by(email=email).first()
-    if user and not user.is_active:
-        token = s.dumps(email, salt='email-confirm')
-        user.verification_token = token
-        db.session.commit()
-
-        confirm_url = url_for('verify_email', token=token, _external=True)
-        msg = Message('Verify your email', sender=app.config['MAIL_USERNAME'], recipients=[email])
-        msg.body = f'Click the link to verify your email: {confirm_url}'
-        mail.send(msg)
-
-        return jsonify({'message': 'A new verification email has been sent'}), 200
-
-    return jsonify({'error': 'Invalid email or account already verified'}), 400
 
 
 @app.route('/api/user/profile', methods=['GET'])
@@ -491,7 +471,6 @@ def signup():
             return redirect(url_for('signup'))
 
     hashed_pw = generate_password_hash(data.get('password'))
-    token = s.dumps(email, salt='email-confirm')
     role = Role.query.filter_by(name=data.get('role')).first()
 
     user = User(
@@ -501,56 +480,25 @@ def signup():
         last_name=data.get('last_name'),
         phone_number=data.get('phone_number'),
         major=data.get('major'),
-        verification_token=token,
-        role=role
+        role=role,
+        is_active=True  # User is active by default
     )
     db.session.add(user)
     db.session.commit()
 
-    confirm_url = url_for('verify_email', token=token, _external=True)
-    msg = Message('Verify your email', sender=app.config['MAIL_USERNAME'], recipients=[email])
-    msg.body = f'Click the link to verify your email: {confirm_url}'
-    mail.send(msg)
+    # Log the user in immediately
+    session['user_id'] = user.user_id
 
     if request.is_json:
-        return jsonify({'message': 'Verification email sent. Please check your inbox.'}), 201
+        return jsonify({
+            'message': 'Registration successful',
+            'user': user_to_dict(user)
+        }), 201
     else:
-        flash('Verification email sent.')
-        return redirect(url_for('login'))
+        flash('Registration successful.')
+        return redirect(url_for('entry'))
 
 
-@app.route('/verify/<token>')
-def verify_email(token):
-    try:
-        email = s.loads(token, salt='email-confirm', max_age=3600)
-        user = User.query.filter_by(email=email).first()
-        if user:
-            user.is_active = True
-            user.verification_token = None
-            db.session.commit()
-            flash('Email verified. You can now log in.')
-    except Exception as e:
-        flash('Verification link expired or invalid.')
-    return redirect(url_for('login'))
-
-
-@app.route('/resend_verification', methods=['GET', 'POST'])
-def resend_verification():
-    if request.method == 'POST':
-        email = request.form['email']
-        user = User.query.filter_by(email=email).first()
-        if user and not user.is_active:
-            token = s.dumps(email, salt='email-confirm')
-            user.verification_token = token
-            db.session.commit()
-            confirm_url = url_for('verify_email', token=token, _external=True)
-            msg = Message('Verify your email', sender=app.config['MAIL_USERNAME'], recipients=[email])
-            msg.body = f'Click the link to verify your email: {confirm_url}'
-            mail.send(msg)
-            flash('A new verification email has been sent.')
-        else:
-            flash('Invalid email or account already verified.')
-    return render_template('resend_verification.html')
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -567,7 +515,7 @@ def login():
             password = request.form['password']
 
         user = User.query.filter_by(email=email).first()
-        if user and user.is_active and check_password_hash(user.password_hash, password):
+        if user and check_password_hash(user.password_hash, password):
             session['user_id'] = user.user_id
 
             global user_session # [!]
@@ -590,9 +538,9 @@ def login():
                 return redirect(url_for('entry'))
 
         if request.is_json:
-            return jsonify({'error': 'Invalid credentials or email not verified'}), 401
+            return jsonify({'error': 'Invalid credentials'}), 401
         else:
-            flash('Invalid credentials or email not verified.')
+            flash('Invalid credentials.')
 
     return render_template('login.html')
 

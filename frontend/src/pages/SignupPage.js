@@ -14,7 +14,6 @@ const SignupPage = () => {
     major: '',
   });
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   const { register } = useAuth();
   const navigate = useNavigate();
 
@@ -35,11 +34,9 @@ const SignupPage = () => {
 
     try {
       const response = await register(formData);
-      setSuccess('Registration successful! Please check your email to verify your account.');
-      // Navigate to login page after a delay
-      setTimeout(() => {
-        navigate('/login');
-      }, 3000);
+      // Upon successful registration, user is automatically logged in
+      // Redirect to the home page
+      navigate('/home');
     } catch (err) {
       console.error('Registration error:', err);
       setError(err.message || 'Registration failed. Please try again.');
@@ -153,12 +150,6 @@ const SignupPage = () => {
             {error && (
               <div className="text-red-500 text-center text-sm">
                 {error}
-              </div>
-            )}
-
-            {success && (
-              <div className="text-green-500 text-center text-sm">
-                {success}
               </div>
             )}
           </form>
