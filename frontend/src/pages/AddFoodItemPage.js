@@ -1,4 +1,4 @@
-// src/pages/AddFoodItemPage.js check
+// src/pages/AddFoodItemPage.js
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Calendar, Clock, MapPin } from 'lucide-react';
