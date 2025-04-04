@@ -20,7 +20,7 @@ const LoginPage = () => {
       navigate('/home');
     } catch (err) {
       console.error('Login error:', err);
-      setError('Invalid credentials or account not verified');
+      setError('Invalid credentials');
     }
   };
 
@@ -47,6 +47,12 @@ const LoginPage = () => {
           onChange={(e) => setPassword(e.target.value)}
         />
         <button type="submit" className="w-full bg-blue-500 text-white p-2 rounded">Log In</button>
+
+        <div className="flex justify-between mt-2 text-sm">
+          <Link to="/signup" className="text-blue-600 hover:underline">
+            Create an account
+          </Link>
+        </div>
       </form>
       {error && <div className="text-red-500 mt-4">{error}</div>}
     </div>
