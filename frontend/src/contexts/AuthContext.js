@@ -1,4 +1,4 @@
-// src/contexts/AuthContext.js
+// Changes to AuthContext.js
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import apiService from '../services/apiService';
 
@@ -63,11 +63,16 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Register function
+  // Register function - updated to handle immediate login
   const register = async (userData) => {
     setError(null);
     try {
       const response = await apiService.register(userData);
+      if (response.user) {
+        // User is automatically logged in after registration
+        setCurrentUser(response.user);
+        localStorage.setItem('currentUser', JSON.stringify(response.user));
+      }
       return response;
     } catch (err) {
       setError('Registration failed');
@@ -86,42 +91,6 @@ export const AuthProvider = ({ children }) => {
       // Still remove user from local state even if API call fails
       setCurrentUser(null);
       localStorage.removeItem('currentUser');
-    }
-  };
-
-  // Reset password request
-  const requestPasswordReset = async (email) => {
-    setError(null);
-    try {
-      const response = await apiService.requestPasswordReset(email);
-      return response;
-    } catch (err) {
-      setError('Password reset request failed');
-      throw err;
-    }
-  };
-
-  // Reset password with token
-  const resetPassword = async (token, password) => {
-    setError(null);
-    try {
-      const response = await apiService.resetPassword(token, password);
-      return response;
-    } catch (err) {
-      setError('Password reset failed');
-      throw err;
-    }
-  };
-
-  // Resend verification email
-  const resendVerification = async (email) => {
-    setError(null);
-    try {
-      const response = await apiService.resendVerification(email);
-      return response;
-    } catch (err) {
-      setError('Failed to resend verification email');
-      throw err;
     }
   };
 
@@ -149,9 +118,6 @@ export const AuthProvider = ({ children }) => {
     login,
     register,
     logout,
-    requestPasswordReset,
-    resetPassword,
-    resendVerification,
     updateProfile
   };
 
