@@ -39,18 +39,23 @@ const ProfilePage = () => {
     }
   }, [currentUser]);
 
-  const fetchUserFoodPostings = async () => {
-    try {
-      setLoading(true);
-      const response = await apiService.getUserFoodPostings();
+const fetchUserFoodPostings = async () => {
+  try {
+    setLoading(true);
+    const response = await apiService.getUserFoodPostings();
+    console.log('Food postings response:', response); // Debugging
+    if (response && response.postings) {
       setUserFoodPostings(response.postings);
-    } catch (err) {
-      console.error('Error fetching user food postings:', err);
-      setError('Failed to load your food postings');
-    } finally {
-      setLoading(false);
+    } else {
+      console.error('Unexpected response format:', response);
     }
-  };
+  } catch (err) {
+    console.error('Error fetching user food postings:', err);
+    setError('Failed to load your food postings');
+  } finally {
+    setLoading(false);
+  }
+};
 
   const fetchUserFoodInteractions = async () => {
     try {

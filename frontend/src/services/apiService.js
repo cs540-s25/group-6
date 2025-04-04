@@ -1,4 +1,4 @@
-// src/services/apiService.js - fully updated with improved authentication
+// src/services/apiService.js - comprehensive authentication solution
 const API_BASE_URL = 'http://localhost:5000';
 
 // Helper function to handle API responses
@@ -24,6 +24,21 @@ const handleResponse = async (response) => {
   return data;
 };
 
+// Get auth headers - centralized function for consistency
+const getAuthHeaders = () => {
+  const headers = {
+    'Content-Type': 'application/json',
+  };
+
+  // Add token if available (for token-based auth)
+  const token = localStorage.getItem('token');
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  return headers;
+};
+
 /**
  * API Service for handling all backend requests
  */
@@ -39,14 +54,19 @@ class ApiService {
     try {
       const response = await fetch(`${API_BASE_URL}/api/signup`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify(userData),
         credentials: 'include',
       });
 
-      return await handleResponse(response);
+      const data = await handleResponse(response);
+
+      // Store token if returned
+      if (data.token) {
+        localStorage.setItem('token', data.token);
+      }
+
+      return data;
     } catch (error) {
       console.error('Registration error:', error);
       throw error;
@@ -63,14 +83,19 @@ class ApiService {
     try {
       const response = await fetch(`${API_BASE_URL}/api/login`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ email, password }),
         credentials: 'include',
       });
 
-      return await handleResponse(response);
+      const data = await handleResponse(response);
+
+      // Store token if returned
+      if (data.token) {
+        localStorage.setItem('token', data.token);
+      }
+
+      return data;
     } catch (error) {
       console.error('Login error:', error);
       throw error;
@@ -85,12 +110,18 @@ class ApiService {
     try {
       const response = await fetch(`${API_BASE_URL}/api/logout`, {
         method: 'GET',
+        headers: getAuthHeaders(),
         credentials: 'include',
       });
+
+      // Clear stored token
+      localStorage.removeItem('token');
 
       return await handleResponse(response);
     } catch (error) {
       console.error('Logout error:', error);
+      // Clear token even if API fails
+      localStorage.removeItem('token');
       throw error;
     }
   }
@@ -104,10 +135,9 @@ class ApiService {
     try {
       const response = await fetch(`${API_BASE_URL}/api/reset_password_request`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ email }),
+        credentials: 'include',
       });
 
       return await handleResponse(response);
@@ -127,10 +157,9 @@ class ApiService {
     try {
       const response = await fetch(`${API_BASE_URL}/reset_password/${token}`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ password }),
+        credentials: 'include',
       });
 
       return await handleResponse(response);
@@ -149,9 +178,7 @@ class ApiService {
     try {
       const response = await fetch(`${API_BASE_URL}/resend_verification`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ email }),
         credentials: 'include',
       });
@@ -172,13 +199,14 @@ class ApiService {
   async getFoodListings(filters = {}) {
     try {
       const params = new URLSearchParams();
-      
+
       // Add filters as query parameters
       if (filters.status) params.append('status', filters.status);
       if (filters.food_type) params.append('food_type', filters.food_type);
       if (filters.q) params.append('q', filters.q);
-  
+
       const response = await fetch(`${API_BASE_URL}/api/food_listings?${params.toString()}`, {
+        headers: getAuthHeaders(),
         credentials: 'include',
       });
 
@@ -199,9 +227,7 @@ class ApiService {
     try {
       const response = await fetch(`${API_BASE_URL}/api/food_listings`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify(foodData),
         credentials: 'include',
       });
@@ -221,6 +247,7 @@ class ApiService {
   async getFoodListing(id) {
     try {
       const response = await fetch(`${API_BASE_URL}/api/food_listings/${id}`, {
+        headers: getAuthHeaders(),
         credentials: 'include',
       });
 
@@ -241,9 +268,7 @@ class ApiService {
     try {
       const response = await fetch(`${API_BASE_URL}/api/food_listings/${id}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify(foodData),
         credentials: 'include',
       });
@@ -264,6 +289,7 @@ class ApiService {
     try {
       const response = await fetch(`${API_BASE_URL}/api/food_listings/${id}`, {
         method: 'DELETE',
+        headers: getAuthHeaders(),
         credentials: 'include',
       });
 
@@ -284,9 +310,7 @@ class ApiService {
     try {
       const response = await fetch(`${API_BASE_URL}/api/food_listings/${foodId}/reserve`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify(reservationData),
         credentials: 'include',
       });
@@ -307,10 +331,11 @@ class ApiService {
   async getCurrentUser() {
     try {
       const response = await fetch(`${API_BASE_URL}/api/user/profile`, {
-        credentials: 'include',
         headers: {
+          ...getAuthHeaders(),
           'Cache-Control': 'no-cache',
         },
+        credentials: 'include',
       });
 
       return await handleResponse(response);
@@ -329,9 +354,7 @@ class ApiService {
     try {
       const response = await fetch(`${API_BASE_URL}/api/user/profile`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify(profileData),
         credentials: 'include',
       });
@@ -355,9 +378,7 @@ class ApiService {
     try {
       const response = await fetch(`${API_BASE_URL}/api/ratings`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify(ratingData),
         credentials: 'include',
       });
@@ -377,6 +398,7 @@ class ApiService {
   async getChatMessages(foodId) {
     try {
       const response = await fetch(`${API_BASE_URL}/api/chat/${foodId}`, {
+        headers: getAuthHeaders(),
         credentials: 'include',
       });
 
@@ -396,9 +418,7 @@ class ApiService {
     try {
       const response = await fetch(`${API_BASE_URL}/api/chat/send`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify(messageData),
         credentials: 'include',
       });
@@ -417,6 +437,7 @@ class ApiService {
   async getUserFoodPostings() {
     try {
       const response = await fetch(`${API_BASE_URL}/api/food-postings`, {
+        headers: getAuthHeaders(),
         credentials: 'include',
       });
 
@@ -434,6 +455,7 @@ class ApiService {
   async getUserFoodInteractions() {
     try {
       const response = await fetch(`${API_BASE_URL}/api/food-interested`, {
+        headers: getAuthHeaders(),
         credentials: 'include',
       });
 
@@ -453,6 +475,7 @@ class ApiService {
     try {
       const response = await fetch(`${API_BASE_URL}/api/chat-list/${userId}`, {
         method: 'GET',
+        headers: getAuthHeaders(),
         credentials: 'include',
       });
 

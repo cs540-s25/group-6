@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY')
+app.secret_key = os.environ.get('SECRET_KEY', 'default_development_secret_key')
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///resource_sharing.db'
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
@@ -23,7 +23,9 @@ app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD', '')
 
 
 # Enable CORS for the React frontend
-CORS(app, resources={r"/*": {"origins": "http://localhost:3000"}}, supports_credentials=True)
+CORS(app, resources={r"/*": {"origins": "http://localhost:3000"}},
+     supports_credentials=True,
+     allow_headers=["Content-Type", "Authorization"])
 
 db = SQLAlchemy(app)
 mail = Mail(app)
@@ -106,11 +108,25 @@ class Chat(db.Model):
 
 # Helper functions
 def get_current_user():
+    # Check JWT token or session cookie
     user_id = session.get('user_id')
-    
-    global user_session # [!]
-    user_id = user_session['user_id'] # [!]
-    
+
+    if not user_id and request.headers.get('Authorization'):
+        # Extract user_id from Authorization header if present
+        try:
+            token = request.headers.get('Authorization').replace('Bearer ', '')
+            # Add your token validation logic here
+            # This is a simplified example
+            data = s.loads(token, salt='auth', max_age=3600)
+            user_id = data.get('user_id')
+        except Exception as e:
+            app.logger.error(f"Token validation error: {str(e)}")
+            return None
+
+    # Use fallback to global variable if needed
+    if not user_id and 'user_id' in user_session:
+        user_id = user_session['user_id']
+
     if user_id:
         return User.query.get(user_id)
     return None
@@ -211,15 +227,21 @@ def api_login():
 
     user = User.query.filter_by(email=email).first()
     if user and check_password_hash(user.password_hash, password):
+        # Set Flask session
         session['user_id'] = user.user_id
 
-        global user_session  # [!]
-        user_session["user_id"] = user.user_id  # [!] Store user ID in session
-        user_session["username"] = f"{user.first_name} {user.last_name}"  # [!] Store username in session
+        # Update global variable (for backward compatibility)
+        global user_session
+        user_session["user_id"] = user.user_id
+        user_session["username"] = f"{user.first_name} {user.last_name}"
+
+        # Generate JWT token for API access
+        token = s.dumps({'user_id': user.user_id}, salt='auth')
 
         return jsonify({
             'message': 'Logged in successfully',
-            'user': user_to_dict(user)
+            'user': user_to_dict(user),
+            'token': token
         }), 200
 
     return jsonify({'error': 'Invalid credentials'}), 401
