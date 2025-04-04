@@ -10,6 +10,8 @@ import ResendVerificationPage from './pages/ResendVerificationPage';
 import AddFoodItemPage from './pages/AddFoodItemPage';
 import FoodDetailPage from './pages/FoodDetailPage';
 import ProfilePage from './pages/ProfilePage';
+import ChatPage from './pages/ChatPage';
+import ChatListPage from './pages/ChatListPage';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 
 // Protected route component
@@ -53,6 +55,8 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+      <Route path="/chat-list/:userId" element={<ChatListPage />} />
+      <Route path="/chat/:foodId" element={<ChatPage />} />
     </Routes>
   );
 }

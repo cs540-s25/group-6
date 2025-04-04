@@ -18,8 +18,8 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///resource_sharing.db'
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME', 'your_email@gmail.com')
-app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD', 'your_app_password')
+app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME', '')
+app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD', '')
 
 # Enable CORS for the React frontend
 CORS(app, resources={r"/*": {"origins": "http://localhost:3000"}}, supports_credentials=True)
@@ -28,6 +28,9 @@ db = SQLAlchemy(app)
 mail = Mail(app)
 s = URLSafeTimedSerializer(app.secret_key)
 
+# [!] Temporal; since get_current_user() not working
+user_session = {'user_id':None, 
+                'username':None}
 
 # User and Role models (imported from resource_db_setup.py)
 class Role(db.Model):
@@ -81,10 +84,32 @@ class FoodListing(db.Model):
     # Relationships
     provider = db.relationship("User", backref="food_listings")
 
+# app.py
+class Chat(db.Model):
+    __tablename__ = 'chats'
+    id = db.Column(db.Integer, primary_key=True)
+    sender_id = db.Column(db.Integer, db.ForeignKey('users.user_id'))
+    receiver_id = db.Column(db.Integer, db.ForeignKey('users.user_id'))
+    food_id = db.Column(db.Integer, db.ForeignKey('food_listings.food_id'))
+    message = db.Column(db.Text)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            'senderId': self.sender_id,
+            'receiverId': self.receiver_id,
+            'foodId': self.food_id,
+            'message': self.message,
+            'timestamp': self.timestamp.isoformat()
+        }
 
 # Helper functions
 def get_current_user():
     user_id = session.get('user_id')
+    
+    global user_session # [!]
+    user_id = user_session['user_id'] # [!]
+    
     if user_id:
         return User.query.get(user_id)
     return None
@@ -182,6 +207,11 @@ def api_login():
     user = User.query.filter_by(email=email).first()
     if user and check_password_hash(user.password_hash, password):
         session['user_id'] = user.user_id
+
+        global user_session # [!]
+        user_session["user_id"] = user.id  # [!] Store user ID in session
+        user_session["username"] = username  # [!] Store username in session (optional)
+        
         return jsonify({
             'message': 'Logged in successfully',
             'user': user_to_dict(user)
@@ -192,6 +222,7 @@ def api_login():
 
 @app.route('/api/logout', methods=['GET'])
 def api_logout():
+    user_session = {} # [!]
     session.pop('user_id', None)
     return jsonify({'message': 'Logged out successfully'}), 200
 
@@ -276,15 +307,20 @@ def api_get_food_listings():
 
 @app.route('/api/food_listings', methods=['POST'])
 def api_create_food_listing():
-    user = get_current_user()
+    print("[POST] food_listings")
+    user = get_current_user() ## Not working
+    print(f"[user] {user}")
+    
     if not user:
         return jsonify({'error': 'Not authenticated'}), 401
 
     data = request.json
-
+    print("[POST] Received data:", data)
+    
     # Create new food listing
     new_food = FoodListing(
         provider_id=user.user_id,
+        #provider_id=user_session['user_id'],
         title=data.get('title'),
         description=data.get('description'),
         food_type=data.get('food_type'),
@@ -482,6 +518,10 @@ def login():
         if user and check_password_hash(user.password_hash, password):
             session['user_id'] = user.user_id
 
+            global user_session # [!]
+            user_session["user_id"] = user.user_id  # [!] Store user ID in session
+            user_session["username"] = user.first_name  # [!] Store username in session (optional)            
+            
             if request.is_json:
                 return jsonify({
                     'message': 'Logged in successfully',
@@ -508,6 +548,7 @@ def login():
 @app.route('/logout')
 def logout():
     session.pop('user_id', None)
+    user_session = {'user_id':None, 'username':None} # [!]
     flash('You have been logged out.')
     return redirect(url_for('login'))
 
@@ -555,9 +596,197 @@ def setup_roles():
             db.session.add(Role(name=r))
     db.session.commit()
 
+# Chatting
+@app.route('/api/chat/<int:food_id>', methods=['GET'])
+def get_chat_messages(food_id):
+    food = FoodListing.query.get(food_id)
+    if not food:
+        return jsonify({'error': 'Food item not found'}), 404
+
+    provider_id = food.provider_id  # Get the provider_id from FoodListing
+    messages = Chat.query.filter(
+        (Chat.food_id == food_id) & 
+        ((Chat.sender_id == provider_id) | (Chat.receiver_id == provider_id))
+    ).all()
+
+    return jsonify({'messages': [msg.to_dict() for msg in messages]}), 200
+
+@app.route('/api/chat/send', methods=['POST'])
+def send_chat_message():
+    data = request.json
+    sender_id = data['senderId']
+    food_id = data['foodId']  # Now we get the foodId from the request
+
+    # Fetch the food listing based on foodId to get the providerId (receiver)
+    food = FoodListing.query.get(food_id)
+    if not food:
+        return jsonify({'error': 'Food item not found'}), 404
+
+    receiver_id = food.provider_id  # The provider of the food item is the receiver
+
+    message_content = data['message']
+    
+    # Save the message to the database
+    new_message = Chat(sender_id=sender_id, receiver_id=receiver_id, food_id=food_id, message=message_content)
+    db.session.add(new_message)
+    db.session.commit()
+    
+    return jsonify({'message': new_message.to_dict()}), 201
+
+# fetching chats by userId
+@app.route('/api/chats/<int:user_id>', methods=['GET'])
+def get_chats_by_user(user_id):
+    try:
+        # Fetch all chats for this user, either sent or received
+        chats = Chat.query.filter(
+            (Chat.sender_id == user_id) | (Chat.receiver_id == user_id)
+        ).all()
+
+        # Group chats by food_id
+        grouped_chats = {}
+        for chat in chats:
+            food_id = chat.food_id
+            if food_id not in grouped_chats:
+                grouped_chats[food_id] = []
+            grouped_chats[food_id].append(chat)
+
+        # Fetch food details (name, etc.) for each food_id
+        grouped_chats_with_food = []
+        for food_id, food_chats in grouped_chats.items():
+            food = FoodListing.query.get(food_id)
+            if food:
+                grouped_chats_with_food.append({
+                    'food_id': food_id,
+                    'food_title': food.title,
+                    'chats': [
+                        {
+                            'sender_id': chat.sender_id,
+                            'receiver_id': chat.receiver_id,
+                            'message': chat.message,
+                            'timestamp': chat.timestamp.isoformat()
+                        }
+                        for chat in food_chats
+                    ]
+                })
+
+        return jsonify({'chats': grouped_chats_with_food}), 200
+
+    except Exception as e:
+        print(f"Error fetching chats: {e}")
+        return jsonify({'error': 'Failed to fetch chats'}), 500
+
+# Load all the chat
+@app.route('/api/chat-list/<int:user_id>', methods=['GET'])
+def get_chat_list(user_id):
+    chats = Chat.query.filter(
+        (Chat.sender_id == user_id) | (Chat.receiver_id == user_id)
+    ).all()
+
+    food_chats = {}
+    for chat in chats:
+        if chat.food_id not in food_chats:
+            food_chats[chat.food_id] = {
+                'foodId': chat.food_id,
+                'messages': [],
+            }
+        food_chats[chat.food_id]['messages'].append({
+            'senderId': chat.sender_id,
+            'receiverId': chat.receiver_id,
+            'message': chat.message,
+            'timestamp': chat.timestamp,
+        })
+
+    result = []
+    for food_id, chat_data in food_chats.items():
+        food_item = FoodListing.query.get(food_id)
+        if food_item:
+            result.append({
+                'foodId': food_item.food_id,
+                'foodTitle': food_item.title,
+                'messages': chat_data['messages']
+            })
+
+    return jsonify({'chats': result}), 200
+
+@app.route('/api/food-postings', methods=['GET'])
+def get_user_food_postings():
+    posted_food = FoodListing.query.filter_by(provider_id=user_session['user_id']).all()
+    postings = [{
+        'id': food.food_id,
+        'title': food.title,
+        'status': food.status,
+        'created_at': food.created_at
+    } for food in posted_food]
+    return jsonify({'postings': postings}), 200
+
+@app.route('/api/food-interested', methods=['GET'])
+def get_user_food_interested():
+    interacted_food = FoodListing.query.filter(
+        FoodListing.food_id.in_(
+            [chat.food_id for chat in Chat.query.filter_by(sender_id=user_session['user_id']).all()]
+        )
+    ).all()
+    chats = Chat.query.filter_by(sender_id=user_session['user_id']).all()
+
+    food_list = [{
+        'id': food.food_id,
+        'title': food.title,
+        'status': food.status,
+        'created_at': food.created_at
+    } for food in interacted_food]
+
+    return jsonify({'interacted': food_list}), 200
+
+## To add test data
+@app.route('/add_test_data', methods=['GET'])
+def add_test_data():
+    # Create a new role if it doesn't exist
+    if not Role.query.filter_by(name="Undergrad").first():
+        new_role = Role(name="Undergrad")
+        db.session.add(new_role)
+        db.session.commit()
+    
+    # Create a test user
+    test_user = User(
+        email='testuser@emory.edu',
+        password_hash=generate_password_hash('password123'),
+        first_name='John',
+        last_name='Doe',
+        is_active=True,
+        role_id=Role.query.filter_by(name="Undergrad").first().role_id,
+        created_at=datetime.utcnow(),
+        updated_at=datetime.utcnow()
+    )
+    
+    db.session.add(test_user)
+    db.session.commit()
+
+    # Create a food listing for the user
+    test_food = FoodListing(
+        provider_id=test_user.user_id,
+        title='Fresh Apples',
+        description='A batch of fresh apples.',
+        food_type='Fruit',
+        quantity=10,
+        unit='item(s)',
+        pickup_location='Woodruff Library',
+        available_from=datetime(2025, 3, 31, 12, 0),
+        available_until=datetime(2025, 4, 2, 12, 0),
+        status='available',
+        created_at=datetime.utcnow(),
+        updated_at=datetime.utcnow()
+    )
+
+    db.session.add(test_food)
+    db.session.commit()
+
+    return jsonify({'message': 'Test data added successfully!'}), 200
 
 if __name__ == '__main__':
     with app.app_context():
+        #db.drop_all()
         db.create_all()
         setup_roles()
+        #add_test_data()
     app.run(debug=True)
+

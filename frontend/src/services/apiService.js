@@ -1,6 +1,6 @@
-
 // src/services/apiService.js - updating relevant methods
 const API_BASE_URL = 'http://localhost:5000';
+
 
 /**
  * API Service for handling all backend requests
@@ -343,6 +343,114 @@ class ApiService {
       throw error;
     }
   }
+
+  /**
+   * Get chat messages between the current user and the provider
+   * @param {number} foodId - The food listing ID
+   * @returns {Promise} - Response with chat messages
+   */
+  async getChatMessages(foodId) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/chat/${foodId}`, {
+        credentials: 'include',
+      });
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching chat messages:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Send a chat message
+   * @param {Object} messageData - The message data
+   * @returns {Promise} - Response with sent message
+   */
+  async sendChatMessage(messageData) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/chat/send`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(messageData),
+        credentials: 'include',
+      });
+      return await response.json();
+    } catch (error) {
+      console.error('Error sending message:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get the food postings made by the current user
+   * @returns {Promise} - Response with food postings
+   */
+  async getUserFoodPostings() {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/food-postings`, {
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to load food postings');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching food postings:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get the food items the current user has interacted with (either posted or started a conversation)
+   * @returns {Promise} - Response with interacted food items
+   */
+  async getUserFoodInteractions() {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/food-interested`, {
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to load food interactions');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching food interactions:', error);
+      throw error;
+    }
+  }
+
+/**
+ * Get the chat list for a user
+ * @param {number} userId - The user ID to fetch chats for
+ * @returns {Promise} - Response with chat list
+ */
+async getChatList(userId) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/chat-list/${userId}`, {
+      method: 'GET',
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to load chat list');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Get chat list error:', error);
+    throw error;
+  }
+}    
+    
 }
 
 // Create and export a single instance
