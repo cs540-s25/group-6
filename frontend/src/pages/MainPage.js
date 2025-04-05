@@ -25,18 +25,20 @@ const MainPage = () => {
   const [userLocation, setUserLocation] = useState(null);
   const [mapKey, setMapKey] = useState(Date.now()); // For forcing map re-renders
   const [currentCity, setCurrentCity] = useState('San Francisco');
+  const [selectedDistance, setSelectedDistance] = useState(null);
+  const [selectedExpiration, setSelectedExpiration] = useState(null);
   // Fetch food listings on component mount
 
-useEffect(() => {
-  const debounceTimer = setTimeout(() => {
-    fetchFoodListings({ 
-      food_type: selectedCategory === 'All' ? null : selectedCategory,
-      q: searchQuery 
-    });
-  }, 500);
-  fetchUserLocation();
-  return () => clearTimeout(debounceTimer);
-}, [searchQuery]);
+  useEffect(() => {
+    const debounceTimer = setTimeout(() => {
+      fetchFoodListings({
+        food_type: selectedCategory === 'All' ? null : selectedCategory,
+        q: searchQuery
+      });
+    }, 500);
+    fetchUserLocation();
+    return () => clearTimeout(debounceTimer);
+  }, [searchQuery]);
 
   // Update fetchFoodListings to use filters
   // const fetchFoodListings = async (filters = {}) => {
@@ -47,7 +49,7 @@ useEffect(() => {
   //       food_type: filters.food_type || undefined,
   //       q: filters.q || undefined
   //     });
-  
+
   //     if (response?.food_listings) {
   //       const transformedListings = response.food_listings.map((item) => ({
   //         id: item.food_id,
@@ -74,66 +76,71 @@ useEffect(() => {
   // };
 
   // Keep the transformation logic ONLY in fetchFoodListings
-const fetchFoodListings = async (filters = {}) => {
-  try {
-    setLoading(true);
-    console.log('Sending filters:', filters); 
-    const response = await apiService.getFoodListings({
-      status: 'available',
-      food_type: filters.food_type || undefined,
-      q: filters.q || undefined
-    });
-    console.log('API Response:', response);
-    if (response?.food_listings) {
-      const transformedListings = response.food_listings.map((item) => ({
-        id: item.food_id,
-        type: 'food',
-        title: item.title,
-        foodType: item.food_type || 'Food',
-        quantity: item.quantity || 1,
-        expirationDays: calculateDaysRemaining(item.expiration_date),
-        distance: calculateDistance(item) || '0.5 miles',
-        owner: `${item.provider?.first_name || 'Anonymous'} ${item.provider?.last_name?.charAt(0) || ''}`.trim(),
-        ownerRating: 4.8,
-        image: getFoodEmoji(item.food_type),
-        timePosted: formatTimeAgo(item.created_at),
-        featured: false,
-      }));
-      setRecommendations(transformedListings);
-    }
-  } catch (err) {
-    console.error('API Error:', err.response?.data || err.message);
-    setError('Failed to load food listings. Please try again later.');
-  } finally {
-    setLoading(false);
-  }
-};
-const fetchUserLocation = () => {
-  if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const { latitude, longitude } = position.coords;
-        setUserLocation({ lat: latitude, lng: longitude });
-        
-        // Get city name from coordinates
-        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`)
-          .then(response => response.json())
-          .then(data => {
-            if (data.address) {
-              const city = data.address.city || data.address.town || data.address.village || 'Unknown';
-              setCurrentCity(city);
-            }
-          })
-          .catch(error => {
-            console.error('Error getting location name:', error);
-          });
-      },
-      (error) => {
-        console.error('Error getting location:', error);
+  const fetchFoodListings = async (filters = {}) => {
+    try {
+      setLoading(true);
+      console.log('Sending filters:', filters);
+
+      const response = await apiService.getFoodListings({
+        status: 'available',
+        food_type: filters.food_type || undefined,
+        q: filters.q || undefined,
+        max_distance: selectedDistance || undefined,
+        min_expiration_days: selectedExpiration !== null ? selectedExpiration : undefined,
+        latitude: userLocation?.lat,
+        longitude: userLocation?.lng
+      });
+      console.log('API Response:', response);
+      if (response?.food_listings) {
+        const transformedListings = response.food_listings.map((item) => ({
+          id: item.food_id,
+          type: 'food',
+          title: item.title,
+          foodType: item.food_type || 'Food',
+          quantity: item.quantity || 1,
+          expirationDays: calculateDaysRemaining(item.expiration_date),
+          distance: calculateDistance(item) || '0.5 miles',
+          owner: `${item.provider?.first_name || 'Anonymous'} ${item.provider?.last_name?.charAt(0) || ''}`.trim(),
+          ownerRating: 4.8,
+          image: getFoodEmoji(item.food_type),
+          timePosted: formatTimeAgo(item.created_at),
+          featured: false,
+        }));
+        setRecommendations(transformedListings);
       }
-    );
-  }
-};
+    } catch (err) {
+      console.error('API Error:', err.response?.data || err.message);
+      setError('Failed to load food listings. Please try again later.');
+    } finally {
+      setLoading(false);
+    }
+  };
+  const fetchUserLocation = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          setUserLocation({ lat: latitude, lng: longitude });
+
+          // Get city name from coordinates
+          fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`)
+            .then(response => response.json())
+            .then(data => {
+              if (data.address) {
+                const city = data.address.city || data.address.town || data.address.village || 'Unknown';
+                setCurrentCity(city);
+              }
+            })
+            .catch(error => {
+              console.error('Error getting location name:', error);
+            });
+        },
+        (error) => {
+          console.error('Error getting location:', error);
+        }
+      );
+    }
+  };
   // Helper function to calculate days remaining until expiration
   const calculateDaysRemaining = (expirationDateStr) => {
     if (!expirationDateStr) return 5; // Default value
@@ -151,9 +158,9 @@ const fetchUserLocation = () => {
     if (userLocation && item.latitude && item.longitude) {
       // Calculate distance using Haversine formula
       const distance = calculateHaversineDistance(
-        userLocation.lat, 
-        userLocation.lng, 
-        item.latitude, 
+        userLocation.lat,
+        userLocation.lng,
+        item.latitude,
         item.longitude
       );
       return `${distance.toFixed(1)} miles`;
@@ -162,17 +169,17 @@ const fetchUserLocation = () => {
   };
   // distance from user location to the persons location who added the post will be calculated by this
   const calculateHaversineDistance = (lat1, lon1, lat2, lon2) => {
-  const R = 3958.8; 
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = 
-    Math.sin(dLat/2) * Math.sin(dLat/2) +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
-    Math.sin(dLon/2) * Math.sin(dLon/2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-  const distance = R * c;
-  return distance;
-};
+    const R = 3958.8;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const distance = R * c;
+    return distance;
+  };
 
   // Helper function to get an emoji based on food type
   const getFoodEmoji = (foodType) => {
@@ -224,60 +231,60 @@ const fetchUserLocation = () => {
     { name: 'Prepared', icon: '🍲' }
   ];
 
-  
-  
+
+
 
   // Update handleSearch to fetch filtered data
   const handleSearch = (e) => {
     e.preventDefault();
-    fetchFoodListings({ 
+    fetchFoodListings({
       food_type: selectedCategory === 'All' ? null : selectedCategory,
-      q: searchQuery 
+      q: searchQuery
     });
   };
 
- // Updated handleCategoryClick with proper API handling
-// const handleCategoryClick = async (categoryName) => {
-//   setSelectedCategory(categoryName);
-//   try {
-//     const filters = {
-//       food_type: categoryName === 'All' ? null : categoryName,
-//       q: searchQuery
-//     };
-    
-//     // Clear previous results while loading
-//     setRecommendations([]);
-//     setLoading(true);
-    
-//     const response = await apiService.getFoodListings(filters);
-    
-//     if (response?.food_listings) {
-//       const transformed = response.food_listings.map(item => ({
-//         id: item.food_id,
-//         title: item.title,
-//         foodType: item.food_type,
-//         // ... other transformations
-//       }));
-//       setRecommendations(transformed);
-//     }
-//   } catch (error) {
-//     setError('Failed to load items');
-//     console.error('API Error:', error);
-//   } finally {
-//     setLoading(false);
-//   }
-// };
+  // Updated handleCategoryClick with proper API handling
+  // const handleCategoryClick = async (categoryName) => {
+  //   setSelectedCategory(categoryName);
+  //   try {
+  //     const filters = {
+  //       food_type: categoryName === 'All' ? null : categoryName,
+  //       q: searchQuery
+  //     };
 
-const handleCategoryClick = (categoryName) => {
-  setSelectedCategory(categoryName);
-  setRecommendations([]);
-  fetchFoodListings({ 
-    food_type: categoryName === 'All' ? null : categoryName,
-    q: searchQuery 
-  });
-};
+  //     // Clear previous results while loading
+  //     setRecommendations([]);
+  //     setLoading(true);
 
-// Remove the duplicate API call version of handleCategoryClick
+  //     const response = await apiService.getFoodListings(filters);
+
+  //     if (response?.food_listings) {
+  //       const transformed = response.food_listings.map(item => ({
+  //         id: item.food_id,
+  //         title: item.title,
+  //         foodType: item.food_type,
+  //         // ... other transformations
+  //       }));
+  //       setRecommendations(transformed);
+  //     }
+  //   } catch (error) {
+  //     setError('Failed to load items');
+  //     console.error('API Error:', error);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+  const handleCategoryClick = (categoryName) => {
+    setSelectedCategory(categoryName);
+    setRecommendations([]);
+    fetchFoodListings({
+      food_type: categoryName === 'All' ? null : categoryName,
+      q: searchQuery
+    });
+  };
+
+  // Remove the duplicate API call version of handleCategoryClick
   const handleAddPost = () => {
     if (!currentUser) {
       navigate('/login');
@@ -298,7 +305,7 @@ const handleCategoryClick = (categoryName) => {
       setFavorites([...favorites, itemId]);
     }
   };
-  
+
   const shareItem = (e, item) => {
     e.stopPropagation();
     console.log('Sharing item:', item);
@@ -341,17 +348,17 @@ const handleCategoryClick = (categoryName) => {
     setShowMap(!showMap);
   };
 
-const handleLocationSelect = (location) => {
-  setUserLocation(location);
-  setCurrentCity(location.address.split(',')[0] || 'Selected Location');
-  
-  // In a real app, you would make an API call to get food listings near this location
-  // For now, we'll just close the modal
-  setShowLocationModal(false);
-  
-  // Refresh listings with new location
-  fetchFoodListings();
-};
+  const handleLocationSelect = (location) => {
+    setUserLocation(location);
+    setCurrentCity(location.address.split(',')[0] || 'Selected Location');
+
+    // In a real app, you would make an API call to get food listings near this location
+    // For now, we'll just close the modal
+    setShowLocationModal(false);
+
+    // Refresh listings with new location
+    fetchFoodListings();
+  };
 
   const handleChatList = () => {
     if (currentUser && currentUser.user_id) {
@@ -360,14 +367,14 @@ const handleLocationSelect = (location) => {
     } else {
       console.error('User not authenticated');
     }
-  };    
+  };
 
   return (
     <div className="app-container">
       <div className="main-page">
         <header className="app-header">
           <div className="header-content">
-          <div 
+            <div
               className="location-selector"
               onClick={() => setShowLocationModal(true)}
             >
@@ -405,17 +412,17 @@ const handleLocationSelect = (location) => {
         </div>
 
         <div className="categories-scroll">
-        {foodCategories.map((category, index) => (
-          <button
-            key={index}
-            className={`category-pill ${selectedCategory === category.name ? 'active' : ''}`}
-            onClick={() => handleCategoryClick(category.name)}
-          >
-            <span className="category-icon">{category.icon}</span>
-            <span className="category-name">{category.name}</span>
-          </button>
-        ))}
-      </div>
+          {foodCategories.map((category, index) => (
+            <button
+              key={index}
+              className={`category-pill ${selectedCategory === category.name ? 'active' : ''}`}
+              onClick={() => handleCategoryClick(category.name)}
+            >
+              <span className="category-icon">{category.icon}</span>
+              <span className="category-name">{category.name}</span>
+            </button>
+          ))}
+        </div>
 
         <div className="tabs-container">
           <button
@@ -457,41 +464,94 @@ const handleLocationSelect = (location) => {
             <div className="filter-group">
               <h4>Distance</h4>
               <div className="filter-options">
-                <button className="filter-option active">0.5 mi</button>
-                <button className="filter-option">1 mi</button>
-                <button className="filter-option">3 mi</button>
-                <button className="filter-option">5+ mi</button>
+                <button
+                  className={`filter-option ${selectedDistance === 0.5 ? 'active' : ''}`}
+                  onClick={() => setSelectedDistance(0.5)}
+                >
+                  0.5 mi
+                </button>
+                <button
+                  className={`filter-option ${selectedDistance === 1 ? 'active' : ''}`}
+                  onClick={() => setSelectedDistance(1)}
+                >
+                  1 mi
+                </button>
+                <button
+                  className={`filter-option ${selectedDistance === 3 ? 'active' : ''}`}
+                  onClick={() => setSelectedDistance(3)}
+                >
+                  3 mi
+                </button>
+                <button
+                  className={`filter-option ${selectedDistance === 5 ? 'active' : ''}`}
+                  onClick={() => setSelectedDistance(5)}
+                >
+                  5+ mi
+                </button>
               </div>
             </div>
+
             <div className="filter-group">
               <h4>Expiration</h4>
               <div className="filter-options">
-                <button className="filter-option active">Any</button>
-                <button className="filter-option">Today</button>
-                <button className="filter-option">3+ days</button>
+                <button
+                  className={`filter-option ${selectedExpiration === null ? 'active' : ''}`}
+                  onClick={() => setSelectedExpiration(null)}
+                >
+                  Any
+                </button>
+                <button
+                  className={`filter-option ${selectedExpiration === 0 ? 'active' : ''}`}
+                  onClick={() => setSelectedExpiration(0)}
+                >
+                  Today
+                </button>
+                <button
+                  className={`filter-option ${selectedExpiration === 3 ? 'active' : ''}`}
+                  onClick={() => setSelectedExpiration(3)}
+                >
+                  3+ days
+                </button>
               </div>
             </div>
+
             <div className="filter-actions">
-              <button className="filter-reset">Reset</button>
-              <button className="filter-apply">Apply Filters</button>
+              <button
+                className="filter-reset"
+                onClick={() => {
+                  setSelectedDistance(null);
+                  setSelectedExpiration(null);
+                }}
+              >
+                Reset
+              </button>
+              <button
+                className="filter-apply"
+                onClick={() => {
+                  setShowFilters(false);
+                  fetchFoodListings();
+                }}
+              >
+                Apply Filters
+              </button>
             </div>
           </div>
         )}
-        
+
         {/* Location Modal */}
         {showLocationModal && (
-          <LocationModal 
-            isOpen={showLocationModal} 
-            onClose={() => setShowLocationModal(false)} 
-            onSelectLocation={handleLocationSelect} 
+          <LocationModal
+            isOpen={showLocationModal}
+            onClose={() => setShowLocationModal(false)}
+            onSelectLocation={handleLocationSelect}
             initialLocation={userLocation}
           />
         )}
-        
+
         {/* Map View */}
         {showMap && (
           <div className="map-view-container">
-            <LocationMap 
+            <LocationMap
               position={userLocation ? [userLocation.lat, userLocation.lng] : undefined}
               foodItems={recommendations}
               zoom={13}
@@ -499,8 +559,8 @@ const handleLocationSelect = (location) => {
             />
           </div>
         )}
-{/* List View */}
-{!showMap && (
+        {/* List View */}
+        {!showMap && (
           <div className="feed-container">
             {loading ? (
               <div className="flex justify-center items-center p-8">

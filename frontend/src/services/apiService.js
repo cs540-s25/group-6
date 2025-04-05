@@ -200,10 +200,16 @@ class ApiService {
     try {
       const params = new URLSearchParams();
 
-      // Add filters as query parameters
+      // Existing filters
       if (filters.status) params.append('status', filters.status);
       if (filters.food_type) params.append('food_type', filters.food_type);
       if (filters.q) params.append('q', filters.q);
+
+      // Add new filter parameters
+      if (filters.max_distance) params.append('max_distance', filters.max_distance);
+      if (filters.min_expiration_days !== undefined) params.append('min_expiration_days', filters.min_expiration_days);
+      if (filters.latitude) params.append('latitude', filters.latitude);
+      if (filters.longitude) params.append('longitude', filters.longitude);
 
       const response = await fetch(`${API_BASE_URL}/api/food_listings?${params.toString()}`, {
         headers: getAuthHeaders(),
@@ -211,7 +217,6 @@ class ApiService {
       });
 
       return await handleResponse(response);
-
     } catch (error) {
       console.error('Get food listings error:', error);
       throw error;
