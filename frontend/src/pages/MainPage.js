@@ -151,12 +151,11 @@ const MainPage = () => {
     return diffDays > 0 ? diffDays : 0;
   };
 
-  // Helper function to calculate distance using Haversine formula
+  // Helper function to calculate distance 
   const calculateDistance = (item) => {
-    // In a real app, you would use the user's location and the item's location
-    // to calculate the actual distance
+    
     if (userLocation && item.latitude && item.longitude) {
-      // Calculate distance using Haversine formula
+      // Calculate distance 
       const distance = calculateHaversineDistance(
         userLocation.lat,
         userLocation.lng,
@@ -343,7 +342,7 @@ const MainPage = () => {
   };
 
 
-  // Add these with your other handler functions
+  // Add these with your other handler functions(for future works)
   const toggleMap = () => {
     setShowMap(!showMap);
   };
