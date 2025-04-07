@@ -21,32 +21,42 @@ const LocationModal = ({ isOpen, onClose, onSelectLocation, initialLocation }) =
   };
 
   const handleConfirm = async () => {
-    if (!selectedLocation) return; 
+    if (!selectedLocation) return;
+    
+    console.log('Attempting to save:', { 
+      lat: selectedLocation.lat, 
+      lng: selectedLocation.lng 
+    });
+  
     setIsSaving(true);
     try {
-      // Update user's location in backend
-      await apiService.updateProfile({
+      const payload = {
         latitude: selectedLocation.lat,
         longitude: selectedLocation.lng,
-        address: selectedLocation.address
+        address: selectedLocation.address || 'Unknown address'
+      };
+  
+      console.log('Sending payload:', payload);
+      
+      const response = await apiService.updateProfile(payload);
+      console.log('Backend response:', response);
+      
+      onSelectLocation(selectedLocation);
+      onClose();
+    } catch (error) {
+      console.error('Full error:', {
+        message: error.message,
+        stack: error.stack,
+        response: error.response
       });
       
-      // Update local state
-      onSelectLocation(selectedLocation);
-      
-      // Optionally refresh user data
-      if (currentUser) {
-        const updatedUser = await apiService.getCurrentUser();
-        // Update your auth context here if needed
+      // Only show alert if it's not a network error
+      if (!error.message.includes('Network')) {
+        alert(`Save failed: ${error.response?.error || error.message}`);
       }
-      
-    } catch (error) {
-      console.error('Failed to save location:', error);
-      alert('Failed to save location. Please try again.');
     } finally {
       setIsSaving(false);
     }
-    onClose();
   };
 
   if (!isOpen) return null;
