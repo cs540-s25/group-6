@@ -229,13 +229,12 @@ As outlined in the project plan, future phases include:
   - Flask: Python-based backend framework for API development
   - SQLAlchemy: ORM for database interactions
 - Database
-  - PostgreSQL: Robust relational database for storing user data, resource listings, and transactions
+  - SQLite: Robust relational database for storing user data, resource listings, and transactions
 - Storage
   - Google Cloud Storage: For storing images of food items, books, and other media
 - Authentication
   - JWT (JSON Web Tokens): For secure user authentication and authorization
-- Geolocation
-  - Google Maps API: For location-based services, pickup/delivery coordination
+
 - Version Control & Collaboration
   - Git: For version control and team collaboration
 - Deployment
