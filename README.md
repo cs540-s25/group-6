@@ -14,15 +14,19 @@ app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD', 'YOUR_MAIL_PASSWOR
 2. Run the Flask backend.
 
 ```
-cd backend/
-python app.py
+Navigate to the backend directory:cd backend/
+Install required pacakeges : pip install -r requirments.txt
+Run the server locally: python app.py
+
 ```
 
 3. Run the JS frontend.
 
 ```
-cd frontend/
-npm start
+Install npm and React
+Navigate to the frontend directory: cd frontend/ 
+To install modules: run npm install
+To run: npm start and navigate to http://localhost:3000/ in your browser to access the app.
 ```
 
 ## 1️⃣ Project Proposal
