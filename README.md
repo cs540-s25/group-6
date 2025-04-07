@@ -403,6 +403,6 @@ a) Are there any outside commitments (family, job, personal) that could impact a
 Team members should inform the group of major conflicts in advance.
 
 Indicate full team agreement on these decisions: All team members must indicate their agreement by typing their names at the bottom of this document.
-Nayoung Choi, Harry Jeon, Atharva Negi, Bohan Wang
+Nayoung Choi, Harry Jeon, Atharva Negi, Bohan Wang, Venkata Anirudh Pillala
 ```
 
