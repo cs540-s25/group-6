@@ -1,10 +1,10 @@
 # 🧑‍💻 Group 6's team project
 
-<img width="1000" alt="Screenshot 2025-04-04 at 11 01 08 AM" src="https://github.com/user-attachments/assets/94177b36-03a2-4b0d-b1c5-15d14d7fef3f" />
 
 # FoodShare - Resource Sharing Platform
 
-![FoodShare Screenshot](https://github.com/user-attachments/assets/94177b36-03a2-4b0d-b1c5-15d14d7fef3f)
+<img width="1000" alt="Screenshot 2025-04-04 at 11 01 08 AM" src="https://github.com/user-attachments/assets/94177b36-03a2-4b0d-b1c5-15d14d7fef3f" />
+
 
 FoodShare is a platform connecting those with surplus food resources to those in need within the Emory University community. The application uses a Flask backend and React frontend to create an efficient ecosystem for food redistribution.
 
