@@ -5,7 +5,6 @@
 
 <img width="1000" alt="Screenshot 2025-04-04 at 11 01 08 AM" src="https://github.com/user-attachments/assets/94177b36-03a2-4b0d-b1c5-15d14d7fef3f" />
 
-
 FoodShare is a platform connecting those with surplus food resources to those in need within the Emory University community. The application uses a Flask backend and React frontend to create an efficient ecosystem for food redistribution.
 
 ## Table of Contents
@@ -16,6 +15,7 @@ FoodShare is a platform connecting those with surplus food resources to those in
 - [API Documentation](#api-documentation)
 - [Connecting to Frontend](#connecting-to-frontend)
 - [Development Workflow](#development-workflow)
+- [Kanban Board](#kanban-board)
 - [Future Enhancements](#future-enhancements)
 
 ## Features
@@ -167,6 +167,14 @@ The frontend React application is structured as follows:
 3. **Testing**
    - Test endpoint `/add_test_data` to populate the database with sample data
    - Access this endpoint in your browser: http://localhost:5000/add_test_data
+
+## Kanban Board
+
+#### ✅ Sprint 2
+<img width="600" src="https://github.com/user-attachments/assets/76437e23-091e-461b-b1d4-4447a639e0d7" />
+
+#### ✅ Sprint 3
+<img width="600" src="https://github.com/user-attachments/assets/ea367490-b032-44fa-b365-9d11e53b4d93" />
 
 ## Future Enhancements
 
