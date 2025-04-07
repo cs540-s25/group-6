@@ -199,6 +199,7 @@ As outlined in the project plan, future phases include:
 - Harry Jeon
 - Atharva Negi
 - Bohan Wang
+- Venkata Anirudh Pillala
 
 ## 1️⃣ Project Proposal
 - Project Overview
