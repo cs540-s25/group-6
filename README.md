@@ -1,33 +1,196 @@
 # 🧑‍💻 Group 6's team project
 
+
+# FoodShare - Resource Sharing Platform
+
 <img width="1000" alt="Screenshot 2025-04-04 at 11 01 08 AM" src="https://github.com/user-attachments/assets/94177b36-03a2-4b0d-b1c5-15d14d7fef3f" />
 
-### How to deploy on your local machine
 
-1. Enter your Google email address for `YOUR_MAIL_USERNAME` and the app password created from here for `YOUR_MAIL_PASSWORD`.
+FoodShare is a platform connecting those with surplus food resources to those in need within the Emory University community. The application uses a Flask backend and React frontend to create an efficient ecosystem for food redistribution.
 
+## Table of Contents
+- [Features](#features)
+- [Backend Architecture](#backend-architecture)
+- [Setup Instructions](#setup-instructions)
+- [Database and Schema Setup](#database-and-schema-setup)
+- [API Documentation](#api-documentation)
+- [Connecting to Frontend](#connecting-to-frontend)
+- [Development Workflow](#development-workflow)
+- [Future Enhancements](#future-enhancements)
+
+## Features
+
+### Current Implementation
+- **User Registration & Authentication**: Secure signup and login for Emory community members
+- **Food Listing Management**: Post, browse, and search available food items
+- **Real-time Messaging**: Communication between food providers and recipients
+- **User Profiles**: Manage personal information and track food listings
+- **Location-based Functionality**: Map integration for food pickup locations
+
+## Backend Architecture
+
+The backend is built with Flask and includes the following components:
+
+- **Flask**: Python web framework for handling HTTP requests
+- **SQLAlchemy**: ORM for database interactions
+- **Werkzeug**: For password hashing and security
+- **Flask-Mail**: For sending password reset emails
+- **Flask-CORS**: For cross-origin resource sharing with the React frontend
+
+### Database Models
+- `User` and `Role`: User authentication and permissions
+- `FoodListing`: Food item information and availability
+- `Chat`: Messaging between users about food listings
+
+## Setup Instructions
+
+### Prerequisites
+- Python 3.x
+- pip (Python package manager)
+- Node.js and npm (for frontend)
+
+### Database and Schema Setup
+
+1. The application uses SQLite which doesn't require separate installation
+
+2. The database schema is defined in both `app.py` and `resource_db_setup.py`
+
+3. Database models include:
+   - `Role`: User roles (undergrad, master, phd, employee, professor)
+   - `User`: User information and authentication data
+   - `FoodListing`: Food donation details and availability
+   - `Chat`: Messaging between users
+
+4. The database is automatically created when you first run the application with:
+   ```python
+   with app.app_context():
+       db.create_all()
+       setup_roles()
+   ```
+
+5. You can initialize test data using the endpoint:
+   ```
+   GET /add_test_data
+   ```
+   This will create a test user and food listing for development purposes
+
+### Backend Setup
+
+1. Clone the repository and navigate to the project directory
+
+2. Install required Python packages:
+```bash
+pip install -r requirements.txt
 ```
+
+3. Configure email settings in `app.py`:
+```python
 app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME', 'YOUR_MAIL_USERNAME')
 app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD', 'YOUR_MAIL_PASSWORD')
 ```
+   - Enter your Google email address for `YOUR_MAIL_USERNAME`
+   - Create an app password from Google Account settings for `YOUR_MAIL_PASSWORD`
 
-2. Run the Flask backend.
-
+4. Run the Flask application:
+```bash
+python app.py
 ```
-Navigate to the backend directory:cd backend/
-Install required pacakeges : pip install -r requirments.txt
-Run the server locally: python app.py
+   The server will start on http://localhost:5000
 
+### Frontend Setup
+
+1. Navigate to the frontend directory
+
+2. Install dependencies:
+```bash
+npm install
 ```
 
-3. Run the JS frontend.
+3. Start the development server:
+```bash
+npm start
+```
+   The application will be accessible at http://localhost:3000
 
-```
-Install npm and React
-Navigate to the frontend directory: cd frontend/ 
-To install modules: run npm install
-To run: npm start and navigate to http://localhost:3000/ in your browser to access the app.
-```
+## API Documentation
+
+### Authentication Endpoints
+- `POST /api/signup`: Register a new user (requires @emory.edu email)
+- `POST /api/login`: Authenticate a user and receive a token
+- `GET /api/logout`: Log out a user
+- `POST /api/reset_password_request`: Request a password reset email
+
+### User Profile Endpoints
+- `GET /api/user/profile`: Get the current user's profile
+- `PUT /api/user/profile`: Update user profile information
+
+### Food Listing Endpoints
+- `GET /api/food_listings`: Get all food listings with optional filters
+- `POST /api/food_listings`: Create a new food listing
+- `GET /api/food_listings/<int:food_id>`: Get details of a specific food listing
+- `PUT /api/food_listings/<int:food_id>`: Update a food listing
+- `DELETE /api/food_listings/<int:food_id>`: Delete a food listing
+
+### Chat Endpoints
+- `GET /api/chat/<int:food_id>`: Get messages for a specific food listing
+- `POST /api/chat/send`: Send a new message
+- `GET /api/chat-list/<int:user_id>`: Get all chats for a user
+- `GET /api/chats/<int:user_id>`: Get grouped chats by food item
+
+## Connecting to Frontend
+
+The frontend React application is structured as follows:
+
+- **Authentication**: Using `AuthContext` to manage user authentication state
+- **API Service**: Centralized service for calling backend APIs
+- **Page Components**:
+  - `EntryPage`: Landing page
+  - `LoginPage` & `SignupPage`: User authentication
+  - `MainPage`: Food listing browse and search
+  - `AddFoodItemPage`: Food listing creation
+  - `FoodDetailPage`: Detailed view of a food listing
+  - `ProfilePage`: User profile management
+  - `ChatPage` & `ChatListPage`: Messaging interface
+
+## Development Workflow
+
+1. **Running the Application**
+   - Start the Flask backend (`python app.py`)
+   - Start the React frontend (`npm start` in the frontend directory)
+
+2. **Database Management**
+   - The application uses SQLite with the database file `resource_sharing.db`
+   - Models are defined in both `app.py` and `resource_db_setup.py`
+   - To reset the database, you can uncomment `db.drop_all()` in app.py's main block
+   - Database migrations are handled manually in this version
+
+3. **Testing**
+   - Test endpoint `/add_test_data` to populate the database with sample data
+   - Access this endpoint in your browser: http://localhost:5000/add_test_data
+
+## Future Enhancements
+
+As outlined in the project plan, future phases include:
+
+### Phase 2: Book Sharing System
+- Book listing and browsing functionality
+- Educational material categorization
+- Book condition assessment
+
+### Additional Planned Features
+- Furniture redistribution
+- Volunteer rider coordination for deliveries
+- Impact tracking and analytics
+- Mobile application development
+
+---
+
+## Project Team - Group 6
+
+- Nayoung Choi
+- Harry Jeon
+- Atharva Negi
+- Bohan Wang
 
 ## 1️⃣ Project Proposal
 - Project Overview
