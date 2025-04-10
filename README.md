@@ -17,6 +17,7 @@ FoodShare is a platform connecting those with surplus food resources to those in
 - [Development Workflow](#development-workflow)
 - [Kanban Board](#kanban-board)
 - [Future Enhancements](#future-enhancements)
+- [Tasks for Group 3](#Tasks)
 
 ## Features
 
@@ -112,6 +113,16 @@ npm start
 ```
    The application will be accessible at http://localhost:3000
 
+
+## Tasks
+
+- search food postings by individual user
+- create chat between different users
+- Add Profile Rating
+- post sharing via link(url)
+- Filters (By distance and Expiration)
+
+  
 ## API Documentation
 
 ### Authentication Endpoints
