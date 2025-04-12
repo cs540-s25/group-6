@@ -14,7 +14,6 @@ import LocationMap from './pages/LocationMap';
 import LocationModal from './pages/LocationModal';
 import ChatPage from './pages/ChatPage';
 import ChatListPage from './pages/ChatListPage';
-
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 
 // Protected route component
@@ -58,8 +57,22 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
-      <Route path="/chat-list/:userId" element={<ChatListPage />} />
-      <Route path="/chat/:foodId" element={<ChatPage />} />
+      <Route
+        path="/chat-list/:userId"
+        element={
+          <ProtectedRoute>
+            <ChatListPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/chat/:otherUserId"
+        element={
+          <ProtectedRoute>
+            <ChatPage />
+          </ProtectedRoute>
+        }
+      />
     </Routes>
   );
 }
