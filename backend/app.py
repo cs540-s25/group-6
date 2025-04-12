@@ -699,7 +699,7 @@ def add_test_data():
 
 if __name__ == '__main__':
     with app.app_context():
-        db.drop_all()
+        # db.drop_all()
         db.create_all()
         setup_roles()
-    socketio.run(debug=True)
+    socketio.run(app,port=5000,debug=True)
