@@ -18,8 +18,8 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///resource_sharing.db'
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME', '')
-app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD', '')
+app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME', 'aquacrystal203@gmail.com')
+app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD', 'a22382003')
 
 
 # Enable CORS for the React frontend
@@ -346,9 +346,12 @@ def get_food_listings():
         
         if search_query:
             search = f"%{search_query}%"
-            query = query.filter(
+            query = query.join(User).filter(
                 FoodListing.title.ilike(search) |
-                FoodListing.description.ilike(search)
+                FoodListing.description.ilike(search) |
+                User.first_name.ilike(search) |
+                User.last_name.ilike(search) |
+                (User.first_name + ' ' + User.last_name).ilike(search)
             )
 
         food_listings = query.order_by(FoodListing.created_at.desc()).all()
