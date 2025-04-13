@@ -785,6 +785,16 @@ def get_user_food_postings():
     } for food in posted_food]
     return jsonify({'postings': postings}), 200
 
+@app.route('/api/user/<int:user_id>/posts', methods=['GET'])
+def get_posts_by_user(user_id):
+    try:
+        listings = FoodListing.query.filter_by(provider_id=user_id).order_by(FoodListing.created_at.desc()).all()
+        return jsonify({
+            'food_listings': [food_listing_to_dict(food) for food in listings]
+        }), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    
 @app.route('/api/food-interested', methods=['GET'])
 def get_user_food_interested():
     interacted_food = FoodListing.query.filter(

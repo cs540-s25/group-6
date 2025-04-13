@@ -7,6 +7,7 @@ import '../MainPage.css';
 import '../MapStyles.css';
 import LocationModal from '../pages/LocationModal';
 import LocationMap from '../pages/LocationMap';
+import { Link } from 'react-router-dom';
 
 const MainPage = () => {
   const { currentUser, logout } = useAuth();
@@ -101,6 +102,7 @@ const MainPage = () => {
           expirationDays: calculateDaysRemaining(item.expiration_date),
           distance: calculateDistance(item) || '0.5 miles',
           owner: `${item.provider?.first_name || 'Anonymous'} ${item.provider?.last_name?.charAt(0) || ''}`.trim(),
+          provider_id: item.provider?.user_id,
           ownerRating: 4.8,
           image: getFoodEmoji(item.food_type),
           timePosted: formatTimeAgo(item.created_at),
@@ -653,7 +655,13 @@ const MainPage = () => {
                                   {item.owner.charAt(0)}
                                 </div>
                                 <div className="owner-details">
-                                  <span className="owner-name">{item.owner}</span>
+                                  <Link
+                                    to={`/user/${item.provider_id}/posts`}
+                                    className="owner-name text-blue-600 hover:underline"
+                                    onClick={(e) => e.stopPropagation()} // Prevent card click from firing
+                                  >
+                                    {item.owner}
+                                  </Link>
                                   <div className="owner-rating">
                                     <span className="star">★</span>
                                     <span>{item.ownerRating}</span>
