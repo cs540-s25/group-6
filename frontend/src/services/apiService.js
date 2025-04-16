@@ -224,6 +224,22 @@ class ApiService {
   }
 
   /**
+   * Get all food listings posted by a specific user
+   */
+  async getFoodListingsByUser(userId) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/user/${userId}/posts`, {
+        headers: getAuthHeaders(),
+        credentials: 'include',
+      });
+      return await handleResponse(response);
+    } catch (error) {
+      console.error('Get food listings by user error:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Create a new food listing
    * @param {Object} foodData - Food listing data
    * @returns {Promise} - Response from API
