@@ -1,7 +1,7 @@
 // src/pages/FoodDetailPage.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Clock, Heart, Share2, MapPin, Calendar, Package, Tag, MessageCircle } from 'lucide-react';
+import { ArrowLeft, Clock, Heart, Share2, MapPin, Calendar, Package, Tag, MessageCircle, Copy, Share } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import apiService from '../services/apiService';
 
@@ -44,11 +44,76 @@ const FoodDetailPage = () => {
     setIsFavorite(!isFavorite);
   };
 
-  const shareItem = () => {
-    // Implement share functionality
-    console.log('Sharing food item:', food);
+  // const shareItem = () => {
+  //   // Implement share functionality
+  //   console.log('Sharing food item:', food);
+  // };
+  const [showShareMenu, setShowShareMenu] = useState(false);
+  const shareMenuRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (shareMenuRef.current && !shareMenuRef.current.contains(e.target)) {
+        setShowShareMenu(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const shareItem = async () => {
+    const shareUrl = `${window.location.origin}/food/${food.food_id}`;
+  
+    try {
+      if (navigator.share) {
+        // Mobile devices: use native share dialog
+        await navigator.share({
+          title: food.title,
+          text: `Check out this free food on FoodShare!`,
+          url: shareUrl,
+        });
+      } else {
+        // Desktop: fallback to clipboard
+        await navigator.clipboard.writeText(shareUrl);
+        alert("Link copied to clipboard!");
+      }
+    } catch (error) {
+      console.error("Error sharing link:", error);
+      alert("Could not share the link.");
+    }
   };
 
+  const handleShareOption = async (type) => {
+    const shareUrl = `${window.location.origin}/food/${food.food_id}`;
+    setShowShareMenu(false);
+  
+    if (type === 'copy') {
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        alert("Link copied to clipboard!");
+      } catch (err) {
+        console.error("Clipboard failed:", err);
+      }
+    }
+  
+    if (type === 'native') {
+      try {
+        if (navigator.share) {
+          await navigator.share({
+            title: food.title,
+            text: `Check out this food on FoodShare!`,
+            url: shareUrl,
+          });
+        } else {
+          alert("Native share not supported.");
+        }
+      } catch (err) {
+        console.error("Native share failed:", err);
+      }
+    }
+  };
+  
   const handleContactOwner = () => {
     if (!currentUser) {
       navigate('/login');  // 로그인되지 않은 경우 로그인 페이지로 리다이렉트
@@ -222,9 +287,33 @@ const FoodDetailPage = () => {
             <button onClick={toggleFavorite} className={`${isFavorite ? 'text-red-500' : 'text-gray-400'}`}>
               <Heart size={20} fill={isFavorite ? "currentColor" : "none"} />
             </button>
-            <button onClick={shareItem} className="text-gray-400">
+            <div className="flex space-x-3" ref={shareMenuRef}>
+            <button
+              onClick={() => setShowShareMenu(prev => !prev)}
+              className="text-gray-400"
+            >
               <Share2 size={20} />
             </button>
+
+            {showShareMenu && (
+              <div className="absolute right-0 mt-2 w-40 bg-white border rounded shadow z-50 text-sm">
+                <button
+                  onClick={() => handleShareOption('copy')}
+                  className="flex items-center gap-2 w-full text-left px-4 py-2 hover:bg-gray-100"
+                  >
+                    <Copy size={16} />
+                    <span>Copy link</span>
+                </button>
+                <button
+                  onClick={() => handleShareOption('native')}
+                  className="flex items-center gap-2 w-full text-left px-4 py-2 hover:bg-gray-100"
+                  >
+                    <Share size={16} />
+                    <span>Share on…</span>
+                </button>
+              </div>
+            )}
+          </div>
           </div>
         </div>
       </div>
