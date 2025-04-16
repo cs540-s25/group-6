@@ -9,6 +9,8 @@ import re
 import os
 from datetime import datetime
 from dotenv import load_dotenv
+from sqlalchemy import func
+
 
 load_dotenv()
 
@@ -63,6 +65,9 @@ class User(db.Model):
     latitude = db.Column(db.Float)
     longitude = db.Column(db.Float)
 
+    ratings_given = db.relationship("Rating", foreign_keys='Rating.giver_id', back_populates="giver")
+    ratings_received = db.relationship("Rating", foreign_keys='Rating.receiver_id', back_populates="receiver")
+
 
 class FoodListing(db.Model):
     __tablename__ = 'food_listings'
@@ -105,6 +110,25 @@ class Chat(db.Model):
             'message': self.message,
             'timestamp': self.timestamp.isoformat()
         }
+
+class Rating(db.Model):
+    __tablename__ = 'ratings'
+
+    rating_id = db.Column(db.Integer, primary_key=True)
+    giver_id = db.Column(db.Integer, db.ForeignKey('users.user_id'))
+    receiver_id = db.Column(db.Integer, db.ForeignKey('users.user_id'))
+    resource_id = db.Column(db.Integer, nullable=False)
+    resource_type = db.Column(db.String, nullable=False)  # 'food', 'book', 'delivery', 'user'
+    score = db.Column(db.Integer, nullable=False)
+    comment = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relationships
+    giver = db.relationship("User", foreign_keys=[giver_id], back_populates="ratings_given")
+    receiver = db.relationship("User", foreign_keys=[receiver_id], back_populates="ratings_received")
+
+
+
 
 # Helper functions
 def get_current_user():
@@ -845,12 +869,71 @@ def add_test_data():
 
     return jsonify({'message': 'Test data added successfully!'}), 200
 
+@app.route('/api/ratings', methods=['POST'])
+def submit_rating():
+    data = request.json
 
+    try:
+        rating = Rating(
+            giver_id=data['giver_id'],
+            receiver_id=data['receiver_id'],
+            resource_id=data['resource_id'],
+            resource_type=data['resource_type'],
+            score=data['score'],
+            comment=data.get('comment', '')
+        )
+        db.session.add(rating)
+        db.session.commit()
+        return jsonify({'message': 'Rating submitted successfully'}), 201
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 400
+    
+@app.route('/api/users/<int:user_id>/rating', methods=['GET'])
+def get_average_user_rating(user_id):
+    try:
+        avg_rating = db.session.query(func.avg(Rating.score)) \
+            .filter(Rating.receiver_id == user_id) \
+            .scalar()
+
+        count = db.session.query(func.count(Rating.rating_id)) \
+            .filter(Rating.receiver_id == user_id) \
+            .scalar()
+
+        return jsonify({
+            'average_rating': round(avg_rating, 1) if avg_rating else 0,
+            'rating_count': count
+        })
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 400
+
+@app.route('/api/ratings/check', methods=['POST'])
+def check_rating_exists():
+    data = request.get_json()
+    giver_id = data.get("giver_id")
+    receiver_id = data.get("receiver_id")
+    resource_id = data.get("resource_id")
+    resource_type = data.get("resource_type")
+
+    existing_rating = Rating.query.filter_by(
+        giver_id=giver_id,
+        receiver_id=receiver_id,
+        resource_id=resource_id,
+        resource_type=resource_type
+    ).first()
+
+    return jsonify({"already_rated": existing_rating is not None})
+
+    
+    
 if __name__ == '__main__':
     with app.app_context():
         #db.drop_all()
         db.create_all()
         setup_roles()
         #add_test_data()
-    app.run(debug=True)
+    app.run(debug=True, port=5001)
 

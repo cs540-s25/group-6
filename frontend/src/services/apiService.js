@@ -1,5 +1,5 @@
 // src/services/apiService.js - comprehensive authentication solution
-const API_BASE_URL = 'http://localhost:5000';
+const API_BASE_URL = 'http://localhost:5001';
 
 // Helper function to handle API responses
 const handleResponse = async (response) => {
