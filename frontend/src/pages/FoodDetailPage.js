@@ -1,5 +1,6 @@
 // src/pages/FoodDetailPage.js
 import React, { useState, useEffect, useRef } from 'react';
+
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Clock, Heart, Share2, MapPin, Calendar, Package, Tag, MessageCircle, Copy, Share } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
@@ -44,10 +45,9 @@ const FoodDetailPage = () => {
     setIsFavorite(!isFavorite);
   };
 
-  // const shareItem = () => {
-  //   // Implement share functionality
-  //   console.log('Sharing food item:', food);
-  // };
+  const shareItem = () => {
+    console.log('Sharing food item:', food);
+
   const [showShareMenu, setShowShareMenu] = useState(false);
   const shareMenuRef = useRef(null);
 
@@ -82,6 +82,7 @@ const FoodDetailPage = () => {
       console.error("Error sharing link:", error);
       alert("Could not share the link.");
     }
+
   };
 
   const handleShareOption = async (type) => {
@@ -116,13 +117,14 @@ const FoodDetailPage = () => {
   
   const handleContactOwner = () => {
     if (!currentUser) {
-      navigate('/login');  // 로그인되지 않은 경우 로그인 페이지로 리다이렉트
+      navigate('/login');
       return;
     }
 
     if (food) {
-      // food_id만 넘기기
-      navigate(`/chat/${food.food_id}`);
+      navigate(`/chat/${food.provider.user_id}`, {
+        state: { foodId: food.food_id, foodTitle: food.title },
+      });
     } else {
       console.error('Food item data is missing');
     }
@@ -147,26 +149,26 @@ const FoodDetailPage = () => {
     const date = new Date(dateString);
     return date.toLocaleTimeString('en-US', {
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     });
   };
 
   // Get food emoji based on type
   const getFoodEmoji = (foodType) => {
     const typeToEmoji = {
-      'Fruit': '🍎',
-      'Vegetables': '🥦',
-      'Dairy': '🥛',
-      'Bakery': '🍞',
-      'Prepared': '🍲',
-      'Meat': '🥩',
-      'Seafood': '🐟',
-      'Snack': '🍿',
-      'Beverage': '🍹',
-      'Canned': '🥫',
-      'Frozen': '🧊',
-      'Grain': '🌾',
-      'Dessert': '🍰'
+      Fruit: '🍎',
+      Vegetables: '🥦',
+      Dairy: '🥛',
+      Bakery: '🍞',
+      Prepared: '🍲',
+      Meat: '🥩',
+      Seafood: '🐟',
+      Snack: '🍿',
+      Beverage: '🍹',
+      Canned: '🥫',
+      Frozen: '🧊',
+      Grain: '🌾',
+      Dessert: '🍰',
     };
 
     return typeToEmoji[foodType] || '🍽️';
@@ -243,6 +245,10 @@ const FoodDetailPage = () => {
     );
   }
 
+
+  const isOwner = currentUser && food.provider.user_id === currentUser.user_id;
+
+
   const handleRatingSubmit = async (e) => {
     e.preventDefault();
   
@@ -269,7 +275,7 @@ const FoodDetailPage = () => {
       console.error("Rating submission failed:", err);
     }
   };
-  
+
   return (
     <div className="bg-gray-50 min-h-screen pb-24">
       <div className="sticky top-0 bg-white shadow-sm z-10">
@@ -285,7 +291,7 @@ const FoodDetailPage = () => {
 
           <div className="flex space-x-3">
             <button onClick={toggleFavorite} className={`${isFavorite ? 'text-red-500' : 'text-gray-400'}`}>
-              <Heart size={20} fill={isFavorite ? "currentColor" : "none"} />
+              <Heart size={20} fill={isFavorite ? 'currentColor' : 'none'} />
             </button>
             <div className="flex space-x-3" ref={shareMenuRef}>
             <button
@@ -356,9 +362,7 @@ const FoodDetailPage = () => {
                   <Calendar size={16} className="mr-2" />
                   <span className="font-medium">Expires On</span>
                 </div>
-                <p className="text-gray-700">
-                  {formatDate(food.expiration_date)}
-                </p>
+                <p className="text-gray-700">{formatDate(food.expiration_date)}</p>
               </div>
 
               <div className="bg-green-50 rounded-lg p-3">
@@ -396,7 +400,6 @@ const FoodDetailPage = () => {
               </div>
               <p className="text-gray-600">{food.pickup_location || 'Not specified'}</p>
 
-              {/* Map placeholder - would be implemented with a mapping library */}
               {food.pickup_latitude && food.pickup_longitude && (
                 <div className="mt-2 bg-gray-200 rounded h-32 flex items-center justify-center">
                   <p className="text-gray-500">Map would be displayed here</p>
@@ -414,6 +417,18 @@ const FoodDetailPage = () => {
                   <span className="text-gray-600 text-sm ml-1">{providerRating.toFixed(1)}</span>
                 </div>
               </div>
+
+
+              {!isOwner && (
+                <button
+                  onClick={handleContactOwner}
+                  className="w-full flex items-center justify-center bg-white border border-blue-500 text-blue-500 py-2 rounded-lg font-medium"
+                >
+                  <MessageCircle size={18} className="mr-2" />
+                  Contact
+                </button>
+              )}
+
               <button
                 onClick={handleContactOwner}
                 className="w-full flex items-center justify-center bg-white border border-blue-500 text-blue-500 py-2 rounded-lg font-medium"
@@ -459,6 +474,7 @@ const FoodDetailPage = () => {
                 )}
               </div>
             )}
+
 
 
             </div>
