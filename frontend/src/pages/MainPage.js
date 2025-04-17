@@ -47,8 +47,8 @@ const MainPage = () => {
         status: 'available',
         food_type: filters.food_type || undefined,
         q: filters.q || undefined,
-        max_distance: selectedDistance || undefined,
-        min_expiration_days: selectedExpiration !== null ? selectedExpiration : undefined,
+        max_distance: filters.distance || undefined,
+        min_expiration_days: filters.expiration !== null ? filters.expiration : undefined,
         latitude: userLocation?.lat,
         longitude: userLocation?.lng,
       });
@@ -475,6 +475,7 @@ const MainPage = () => {
                 onClick={() => {
                   setSelectedDistance(null);
                   setSelectedExpiration(null);
+                  fetchFoodListings({});
                 }}
               >
                 Reset
@@ -483,7 +484,10 @@ const MainPage = () => {
                 className="filter-apply"
                 onClick={() => {
                   setShowFilters(false);
-                  fetchFoodListings();
+                  fetchFoodListings({
+                    distance: selectedDistance,
+                    expiration: selectedExpiration
+                  });
                 }}
               >
                 Apply Filters

@@ -8,9 +8,10 @@ from flask_cors import CORS
 from flask_socketio import SocketIO, emit
 import re
 import os
-from datetime import datetime
-from dotenv import load_dotenv
+from datetime import datetime, timedelta
 from sqlalchemy import func
+from dotenv import load_dotenv
+from math import radians, cos, sin, asin, sqrt
 
 
 load_dotenv()
@@ -397,6 +398,15 @@ def get_food_listings():
         food_type = request.args.get('food_type')
         search_query = request.args.get('q')
         status = request.args.get('status', 'available')
+        max_distance = request.args.get('max_distance', type=float)
+        min_expiration_days = request.args.get('min_expiration_days', type=int)
+        latitude = request.args.get('latitude', type=float)
+        longitude = request.args.get('longitude', type=float)
+
+        print(f"DEBUG - Raw request args: {dict(request.args)}")
+        print(f"DEBUG - Parsed params: max_distance={max_distance} (type: {type(max_distance)}), lat={latitude} (type: {type(latitude)}), lng={longitude} (type: {type(longitude)})")
+
+        # Get all available listings first (without distance filter)
         query = FoodListing.query.filter_by(status=status)
         if food_type and food_type.lower() != 'all':
             query = query.filter(FoodListing.food_type.ilike(food_type))
@@ -409,11 +419,79 @@ def get_food_listings():
                 User.last_name.ilike(search) |
                 (User.first_name + ' ' + User.last_name).ilike(search)
             )
-        food_listings = query.order_by(FoodListing.created_at.desc()).all()
+        # food_listings = query.order_by(FoodListing.created_at.desc()).all()
+
+        # Expiration filter
+        if min_expiration_days is not None:
+            min_expiration_date = datetime.utcnow() + timedelta(days=min_expiration_days)
+            query = query.filter(FoodListing.expiration_date >= min_expiration_date)
+
+        # Get all listings before distance filtering
+        all_listings = query.all()
+        print(f"DEBUG - Found {len(all_listings)} listings before distance filtering")
+
+        # Check for missing location data
+        #for i, listing in enumerate(all_listings[:5]):  # Show first 5 for debugging
+            #print(f"DEBUG - Listing {i}: ID={listing.food_id}, lat={listing.pickup_latitude}, lng={listing.pickup_longitude}")
+
+        # If not applying distance filter, return all listings
+        if max_distance is None or latitude is None or longitude is None:
+            filtered_listings = all_listings
+        else:
+            #print(f"DEBUG - Applying distance filter: max={max_distance} miles from ({latitude}, {longitude})")
+            filtered_listings = []
+
+            for listing in all_listings:
+                # Check if listing has location data
+                if listing.pickup_latitude is None or listing.pickup_longitude is None:
+                    #this adds the listings that have no location data given
+                    filtered_listings.append(listing)
+                    #print(f"DEBUG - Including listing {listing.food_id} despite missing location data")
+                    continue
+
+                # Direct distance calculation for debugging
+                dlat = abs(listing.pickup_latitude - latitude)
+                dlon = abs(listing.pickup_longitude - longitude)
+                direct_dist = (dlat**2 + dlon**2)**0.5
+
+                # Calculate Haversine distance
+                try:
+                    from math import radians, sin, cos, sqrt, asin
+
+                    lat1, lon1 = radians(latitude), radians(longitude)
+                    lat2, lon2 = radians(listing.pickup_latitude), radians(listing.pickup_longitude)
+
+                    dlon = lon2 - lon1
+                    dlat = lat2 - lat1
+                    a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
+                    c = 2 * asin(sqrt(a))
+                    r = 3956  # Radius of Earth in miles
+                    dist = c * r
+
+                    #print(f"DEBUG - Listing {listing.food_id} is {dist:.2f} miles away (direct: {direct_dist:.6f})")
+
+                    if dist <= max_distance:
+                        filtered_listings.append(listing)
+                        #print(f"DEBUG - Listing {listing.food_id} is within range!")
+                    #else:
+                        #print(f"DEBUG - Listing {listing.food_id} is too far ({dist:.2f} > {max_distance})")
+
+                except Exception as e:
+                    print(f"DEBUG - Error calculating distance for listing {listing.food_id}: {e}")
+                    # Include the listing if there's an error in calculation
+                    filtered_listings.append(listing)
+
+        print(f"DEBUG - Final result: {len(filtered_listings)} listings after filtering")
+
+        # Sort by created_at
+        filtered_listings.sort(key=lambda x: x.created_at, reverse=True)
         return jsonify({
-            'food_listings': [food_listing_to_dict(food) for food in food_listings]
+            'food_listings': [food_listing_to_dict(food) for food in filtered_listings]
         }), 200
     except Exception as e:
+        import traceback
+        print(f"ERROR: {str(e)}")
+        print(traceback.format_exc())
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/food_listings', methods=['POST'])
