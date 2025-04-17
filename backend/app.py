@@ -761,38 +761,6 @@ def get_chat_list(user_id):
         return jsonify({'error': 'Failed to fetch conversations'}), 500
 
 
-# Load all the chat
-@app.route('/api/chat-list/<int:user_id>', methods=['GET'])
-def get_chat_list(user_id):
-    chats = Chat.query.filter(
-        (Chat.sender_id == user_id) | (Chat.receiver_id == user_id)
-    ).all()
-
-    food_chats = {}
-    for chat in chats:
-        if chat.food_id not in food_chats:
-            food_chats[chat.food_id] = {
-                'foodId': chat.food_id,
-                'messages': [],
-            }
-        food_chats[chat.food_id]['messages'].append({
-            'senderId': chat.sender_id,
-            'receiverId': chat.receiver_id,
-            'message': chat.message,
-            'timestamp': chat.timestamp,
-        })
-
-    result = []
-    for food_id, chat_data in food_chats.items():
-        food_item = FoodListing.query.get(food_id)
-        if food_item:
-            result.append({
-                'foodId': food_item.food_id,
-                'foodTitle': food_item.title,
-                'messages': chat_data['messages']
-            })
-
-    return jsonify({'chats': result}), 200
 
 @app.route('/api/food-postings', methods=['GET'])
 def get_user_food_postings():

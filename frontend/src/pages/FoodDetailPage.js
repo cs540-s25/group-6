@@ -45,8 +45,7 @@ const FoodDetailPage = () => {
     setIsFavorite(!isFavorite);
   };
 
-  const shareItem = () => {
-    console.log('Sharing food item:', food);
+
 
   const [showShareMenu, setShowShareMenu] = useState(false);
   const shareMenuRef = useRef(null);
