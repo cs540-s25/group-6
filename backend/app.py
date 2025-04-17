@@ -10,6 +10,8 @@ import re
 import os
 from datetime import datetime
 from dotenv import load_dotenv
+from sqlalchemy import func
+
 
 load_dotenv()
 
@@ -19,8 +21,8 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///resource_sharing.db'
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME', '')
-app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD', '')
+app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME', 'aquacrystal203@gmail.com')
+app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD', 'a22382003')
 
 # Enable CORS for the React frontend
 CORS(app, resources={r"/*": {"origins": "http://localhost:3000"}},
@@ -66,6 +68,9 @@ class User(db.Model):
     address = db.Column(db.String)
     latitude = db.Column(db.Float)
     longitude = db.Column(db.Float)
+    ratings_given = db.relationship("Rating", foreign_keys='Rating.giver_id', back_populates="giver")
+    ratings_received = db.relationship("Rating", foreign_keys='Rating.receiver_id', back_populates="receiver")
+
 
 class FoodListing(db.Model):
     __tablename__ = 'food_listings'
@@ -108,6 +113,25 @@ class Chat(db.Model):
             'isRead': self.is_read,
             'foodId': self.food_id
         }
+
+class Rating(db.Model):
+    __tablename__ = 'ratings'
+
+    rating_id = db.Column(db.Integer, primary_key=True)
+    giver_id = db.Column(db.Integer, db.ForeignKey('users.user_id'))
+    receiver_id = db.Column(db.Integer, db.ForeignKey('users.user_id'))
+    resource_id = db.Column(db.Integer, nullable=False)
+    resource_type = db.Column(db.String, nullable=False)  # 'food', 'book', 'delivery', 'user'
+    score = db.Column(db.Integer, nullable=False)
+    comment = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relationships
+    giver = db.relationship("User", foreign_keys=[giver_id], back_populates="ratings_given")
+    receiver = db.relationship("User", foreign_keys=[receiver_id], back_populates="ratings_received")
+
+
+
 
 # Helper functions
 def get_current_user():
@@ -378,9 +402,12 @@ def get_food_listings():
             query = query.filter(FoodListing.food_type.ilike(food_type))
         if search_query:
             search = f"%{search_query}%"
-            query = query.filter(
+            query = query.join(User).filter(
                 FoodListing.title.ilike(search) |
-                FoodListing.description.ilike(search)
+                FoodListing.description.ilike(search) |
+                User.first_name.ilike(search) |
+                User.last_name.ilike(search) |
+                (User.first_name + ' ' + User.last_name).ilike(search)
             )
         food_listings = query.order_by(FoodListing.created_at.desc()).all()
         return jsonify({
@@ -651,8 +678,81 @@ def get_chat_list(user_id):
                 })
         return jsonify({'conversations': result}), 200
     except Exception as e:
+
         app.logger.error(f"Error fetching chat list: {str(e)}")
         return jsonify({'error': 'Failed to fetch conversations'}), 500
+
+
+# Load all the chat
+@app.route('/api/chat-list/<int:user_id>', methods=['GET'])
+def get_chat_list(user_id):
+    chats = Chat.query.filter(
+        (Chat.sender_id == user_id) | (Chat.receiver_id == user_id)
+    ).all()
+
+    food_chats = {}
+    for chat in chats:
+        if chat.food_id not in food_chats:
+            food_chats[chat.food_id] = {
+                'foodId': chat.food_id,
+                'messages': [],
+            }
+        food_chats[chat.food_id]['messages'].append({
+            'senderId': chat.sender_id,
+            'receiverId': chat.receiver_id,
+            'message': chat.message,
+            'timestamp': chat.timestamp,
+        })
+
+    result = []
+    for food_id, chat_data in food_chats.items():
+        food_item = FoodListing.query.get(food_id)
+        if food_item:
+            result.append({
+                'foodId': food_item.food_id,
+                'foodTitle': food_item.title,
+                'messages': chat_data['messages']
+            })
+
+    return jsonify({'chats': result}), 200
+
+@app.route('/api/food-postings', methods=['GET'])
+def get_user_food_postings():
+    posted_food = FoodListing.query.filter_by(provider_id=user_session['user_id']).all()
+    postings = [{
+        'id': food.food_id,
+        'title': food.title,
+        'status': food.status,
+        'created_at': food.created_at
+    } for food in posted_food]
+    return jsonify({'postings': postings}), 200
+
+@app.route('/api/user/<int:user_id>/posts', methods=['GET'])
+def get_posts_by_user(user_id):
+    try:
+        listings = FoodListing.query.filter_by(provider_id=user_id).order_by(FoodListing.created_at.desc()).all()
+        return jsonify({
+            'food_listings': [food_listing_to_dict(food) for food in listings]
+        }), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    
+@app.route('/api/food-interested', methods=['GET'])
+def get_user_food_interested():
+    interacted_food = FoodListing.query.filter(
+        FoodListing.food_id.in_(
+            [chat.food_id for chat in Chat.query.filter_by(sender_id=user_session['user_id']).all()]
+        )
+    ).all()
+    chats = Chat.query.filter_by(sender_id=user_session['user_id']).all()
+
+    food_list = [{
+        'id': food.food_id,
+        'title': food.title,
+        'status': food.status,
+        'created_at': food.created_at
+    } for food in interacted_food]
+
 
 def setup_roles():
     roles = ['undergrad', 'master', 'phd', 'employee', 'professor']
@@ -697,9 +797,72 @@ def add_test_data():
     db.session.commit()
     return jsonify({'message': 'Test data added successfully!'}), 200
 
+
+@app.route('/api/ratings', methods=['POST'])
+def submit_rating():
+    data = request.json
+
+    try:
+        rating = Rating(
+            giver_id=data['giver_id'],
+            receiver_id=data['receiver_id'],
+            resource_id=data['resource_id'],
+            resource_type=data['resource_type'],
+            score=data['score'],
+            comment=data.get('comment', '')
+        )
+        db.session.add(rating)
+        db.session.commit()
+        return jsonify({'message': 'Rating submitted successfully'}), 201
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 400
+    
+@app.route('/api/users/<int:user_id>/rating', methods=['GET'])
+def get_average_user_rating(user_id):
+    try:
+        avg_rating = db.session.query(func.avg(Rating.score)) \
+            .filter(Rating.receiver_id == user_id) \
+            .scalar()
+
+        count = db.session.query(func.count(Rating.rating_id)) \
+            .filter(Rating.receiver_id == user_id) \
+            .scalar()
+
+        return jsonify({
+            'average_rating': round(avg_rating, 1) if avg_rating else 0,
+            'rating_count': count
+        })
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 400
+
+@app.route('/api/ratings/check', methods=['POST'])
+def check_rating_exists():
+    data = request.get_json()
+    giver_id = data.get("giver_id")
+    receiver_id = data.get("receiver_id")
+    resource_id = data.get("resource_id")
+    resource_type = data.get("resource_type")
+
+    existing_rating = Rating.query.filter_by(
+        giver_id=giver_id,
+        receiver_id=receiver_id,
+        resource_id=resource_id,
+        resource_type=resource_type
+    ).first()
+
+    return jsonify({"already_rated": existing_rating is not None})
+
+    
 if __name__ == '__main__':
     with app.app_context():
         # db.drop_all()
         db.create_all()
         setup_roles()
     socketio.run(app,port=5000,debug=True)
+        #add_test_data()
+    #app.run(debug=True, port=5001)
+

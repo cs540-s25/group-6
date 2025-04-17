@@ -1,5 +1,7 @@
+
 // src/services/apiService.js
 const API_BASE_URL = 'http://localhost:5000';
+
 
 // Helper function to handle API responses
 const handleResponse = async (response) => {
@@ -176,6 +178,29 @@ class ApiService {
       throw error;
     }
   }
+
+
+  /**
+   * Get all food listings posted by a specific user
+   */
+  async getFoodListingsByUser(userId) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/user/${userId}/posts`, {
+        headers: getAuthHeaders(),
+        credentials: 'include',
+      });
+      return await handleResponse(response);
+    } catch (error) {
+      console.error('Get food listings by user error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Create a new food listing
+   * @param {Object} foodData - Food listing data
+   * @returns {Promise} - Response from API
+   */
 
   async createFoodListing(foodData) {
     try {

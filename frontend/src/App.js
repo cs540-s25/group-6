@@ -14,6 +14,9 @@ import LocationMap from './pages/LocationMap';
 import LocationModal from './pages/LocationModal';
 import ChatPage from './pages/ChatPage';
 import ChatListPage from './pages/ChatListPage';
+import UserPostsPage from './pages/UserPostsPage';
+
+
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 
 // Protected route component
@@ -40,6 +43,7 @@ function AppRoutes() {
       <Route path="/signup" element={<SignupPage />} />
       <Route path="/reset-password-request" element={<ResetPasswordRequestPage />} />
       <Route path="/resend-verification" element={<ResendVerificationPage />} />
+      <Route path="/user/:userId/posts" element={<UserPostsPage />} />
       <Route
         path="/add-food"
         element={
