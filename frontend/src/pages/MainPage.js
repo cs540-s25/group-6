@@ -8,6 +8,7 @@ import '../MapStyles.css';
 import LocationModal from '../pages/LocationModal';
 import LocationMap from '../pages/LocationMap';
 import { Link } from 'react-router-dom';
+import FoodSkeleton from '../pages/FoodSkeleton';
 
 const MainPage = () => {
   const { currentUser, logout } = useAuth();
@@ -28,6 +29,7 @@ const MainPage = () => {
   const [currentCity, setCurrentCity] = useState('San Francisco');
   const [selectedDistance, setSelectedDistance] = useState(null);
   const [selectedExpiration, setSelectedExpiration] = useState(null);
+  const [sortOption, setSortOption] = useState('Newest');
 
   useEffect(() => {
     const debounceTimer = setTimeout(() => {
@@ -38,7 +40,7 @@ const MainPage = () => {
     }, 500);
     fetchUserLocation();
     return () => clearTimeout(debounceTimer);
-  }, [searchQuery, selectedCategory, selectedDistance, selectedExpiration, userLocation]);
+  }, [searchQuery, selectedCategory, selectedDistance, selectedExpiration, userLocation, sortOption]);
 
   const fetchFoodListings = async (filters = {}) => {
     try {
@@ -53,7 +55,22 @@ const MainPage = () => {
         longitude: userLocation?.lng,
       });
       if (response?.food_listings) {
-        const transformedListings = response.food_listings.map((item) => ({
+        let listings = response.food_listings;
+
+        // Sort listings based on sortOption
+        if (sortOption === 'Expiring') {
+          listings.sort((a, b) => new Date(a.expiration_date) - new Date(b.expiration_date));
+        } else if (sortOption === 'Distance' && userLocation) {
+          listings.sort((a, b) => {
+            const distA = calculateHaversineDistance(userLocation.lat, userLocation.lng, a.latitude, a.longitude);
+            const distB = calculateHaversineDistance(userLocation.lat, userLocation.lng, b.latitude, b.longitude);
+            return distA - distB;
+          });
+        } else {
+          listings.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)); // Default: Newest
+        }
+
+        const transformedListings = listings.map((item) => ({
           id: item.food_id,
           type: 'food',
           title: item.title,
@@ -68,6 +85,7 @@ const MainPage = () => {
           timePosted: formatTimeAgo(item.created_at),
           featured: false,
         }));
+
         setRecommendations(transformedListings);
       }
     } catch (err) {
@@ -240,16 +258,16 @@ const MainPage = () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
-  
+
   const toggleShareMenu = (e, itemId) => {
     e.stopPropagation();
     setActiveShareId(prev => (prev === itemId ? null : itemId));
   };
-  
+
   const handleShareOption = async (type, item) => {
     const shareUrl = `${window.location.origin}/food/${item.id}`;
     setActiveShareId(null);
-  
+
     if (type === 'copy') {
       try {
         await navigator.clipboard.writeText(shareUrl);
@@ -258,7 +276,7 @@ const MainPage = () => {
         console.error("Clipboard failed:", err);
       }
     }
-  
+
     if (type === 'native') {
       try {
         if (navigator.share) {
@@ -400,6 +418,20 @@ const MainPage = () => {
         </div>
 
         <div className="actions-container">
+
+          <div className="sort-dropdown">
+            <label htmlFor="sort-select" style={{ marginRight: '8px' }}>Sort by:</label>
+            <select
+              id="sort-select"
+              value={sortOption}
+              onChange={(e) => setSortOption(e.target.value)}
+              className="filter-button"
+            >
+              <option value="Newest">Newest</option>
+              <option value="Expiring">Expiring Soon</option>
+              <option value="Distance">Distance</option>
+            </select>
+          </div>
           <button className="filter-button" onClick={toggleFilters}>
             <Filter size={16} />
             <span>Filters</span>
@@ -520,7 +552,11 @@ const MainPage = () => {
           <div className="feed-container">
             {loading ? (
               <div className="flex justify-center items-center p-8">
-                <p className="text-gray-500">Loading food items...</p>
+                <>
+                  {[...Array(4)].map((_, i) => (
+                    <FoodSkeleton key={i} />
+                  ))}
+                </>
               </div>
             ) : error ? (
               <div className="bg-red-100 text-red-700 p-4 rounded-lg">{error}</div>
@@ -542,9 +578,8 @@ const MainPage = () => {
                 {recommendations.map((item, index) => (
                   <div
                     key={item.id}
-                    className={`recommendation-card ${item.type === 'unavailable' ? 'unavailable' : ''} ${
-                      item.featured ? 'featured' : ''
-                    }`}
+                    className={`recommendation-card ${item.type === 'unavailable' ? 'unavailable' : ''} ${item.featured ? 'featured' : ''
+                      }`}
                     onClick={() => handleViewPost(item)}
                     style={{ '--animation-order': index }}
                   >
@@ -573,34 +608,34 @@ const MainPage = () => {
                               <Share2 size={18} />
                             </button> */}
                             <button
-                                className="action-button share-btn"
-                                onClick={(e) => {
-                                  // e.stopPropagation();
-                                  toggleShareMenu(e, item.id);
-                                }}
-                                title="Share this post"
-                              >
-                                <Share2 size={18} />
-                              </button>
+                              className="action-button share-btn"
+                              onClick={(e) => {
+                                // e.stopPropagation();
+                                toggleShareMenu(e, item.id);
+                              }}
+                              title="Share this post"
+                            >
+                              <Share2 size={18} />
+                            </button>
 
-                              {activeShareId === item.id && (
-                                <div ref={shareMenuRef} className="absolute right-0 mt-2 w-40 bg-white border rounded shadow z-50 text-sm" onClick={(e) => e.stopPropagation()}>
-                                  <button
-                                    onClick={() => handleShareOption('copy', item)}
-                                    className="flex items-center gap-2 w-full text-left px-4 py-2 hover:bg-gray-100"
-                                  >
-                                    <Copy size={16} />
-                                    <span>Copy link</span>
-                                  </button>
-                                  <button
-                                    onClick={() => handleShareOption('native', item)}
-                                    className="flex items-center gap-2 w-full text-left px-4 py-2 hover:bg-gray-100"
-                                  >
-                                    <Share size={16} />
-                                    <span>Share on…</span>
-                                  </button>
-                                </div>
-                              )}
+                            {activeShareId === item.id && (
+                              <div ref={shareMenuRef} className="absolute right-0 mt-2 w-40 bg-white border rounded shadow z-50 text-sm" onClick={(e) => e.stopPropagation()}>
+                                <button
+                                  onClick={() => handleShareOption('copy', item)}
+                                  className="flex items-center gap-2 w-full text-left px-4 py-2 hover:bg-gray-100"
+                                >
+                                  <Copy size={16} />
+                                  <span>Copy link</span>
+                                </button>
+                                <button
+                                  onClick={() => handleShareOption('native', item)}
+                                  className="flex items-center gap-2 w-full text-left px-4 py-2 hover:bg-gray-100"
+                                >
+                                  <Share size={16} />
+                                  <span>Share on…</span>
+                                </button>
+                              </div>
+                            )}
                           </div>
                         </div>
 
