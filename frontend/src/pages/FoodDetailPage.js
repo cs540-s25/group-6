@@ -417,7 +417,7 @@ const FoodDetailPage = () => {
                 </div>
               </div>
 
-
+              {/* Only show the contact button if the user is not the owner */}
               {!isOwner && (
                 <button
                   onClick={handleContactOwner}
@@ -428,13 +428,6 @@ const FoodDetailPage = () => {
                 </button>
               )}
 
-              <button
-                onClick={handleContactOwner}
-                className="w-full flex items-center justify-center bg-white border border-blue-500 text-blue-500 py-2 rounded-lg font-medium"
-              >
-                <MessageCircle size={18} className="mr-2" />
-                Contact
-              </button>
               {currentUser?.user_id !== food.provider.user_id && (
               <div className="mt-4">
                 {!submitted ? (
@@ -473,9 +466,6 @@ const FoodDetailPage = () => {
                 )}
               </div>
             )}
-
-
-
             </div>
           </div>
         </div>
