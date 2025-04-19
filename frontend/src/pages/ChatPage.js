@@ -16,6 +16,7 @@ const ChatPage = () => {
   const [otherUser, setOtherUser] = useState(null);
   const [foodTitle, setFoodTitle] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [socketConnected, setSocketConnected] = useState(false);
 
   const socketRef = useRef(null);
   const typingTimeoutRef = useRef(null);
@@ -38,21 +39,36 @@ const ChatPage = () => {
     // 1) Connect to Socket.IO
     socketRef.current = io('http://localhost:5000', {
       query: { userId: currentUser.user_id },
+      transports: ['websocket'], // Force WebSocket transport
     });
 
-    // 2) Handle connection errors
+    // 2) Handle connection events
+    socketRef.current.on('connect', () => {
+      console.log('Socket connected:', socketRef.current.id);
+      setSocketConnected(true);
+
+      // Join the conversation after connection is established
+      socketRef.current.emit('join_conversation', {
+        userId: currentUser.user_id,
+        otherUserId: parseInt(otherUserId),
+      });
+    });
+
     socketRef.current.on('connect_error', (err) => {
       console.error('Socket connection error:', err);
       setError('Failed to connect to chat server');
     });
 
-    // 3) Register listeners *before* emitting join
+    // 3) Register message listeners
     socketRef.current.on('conversation_history', (data) => {
-      setMessages(data.messages);
+      console.log('Received conversation history:', data);
+      setMessages(data.messages || []);
     });
 
     socketRef.current.on('new_message', (message) => {
-      setMessages((prev) => [...prev, message]);
+      console.log('Received new message:', message);
+      setMessages((prevMessages) => [...prevMessages, message]);
+
       // Mark as read if appropriate
       if (
         message.senderId !== currentUser.user_id &&
@@ -86,12 +102,6 @@ const ChatPage = () => {
       );
     });
 
-    // 4) Now ask the server to join this conversation
-    socketRef.current.emit('join_conversation', {
-      userId: currentUser.user_id,
-      otherUserId: parseInt(otherUserId),
-    });
-
     // Visibility handler to mark unread as read
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
@@ -109,9 +119,12 @@ const ChatPage = () => {
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
-      socketRef.current.disconnect();
+      console.log('Disconnecting socket');
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+      }
     };
   }, [currentUser, otherUserId, location.state]);
 
@@ -120,21 +133,40 @@ const ChatPage = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleSendMessage = () => {
-    if (!newMessage.trim()) return;
+  const handleSendMessage = (e) => {
+    e.preventDefault(); // Prevent form submission
+    if (!newMessage.trim() || !socketConnected) return;
+
+    console.log('Sending message:', newMessage);
+
     const messageData = {
       userId: currentUser.user_id,
       receiverId: parseInt(otherUserId),
       message: newMessage,
       foodId: location.state?.foodId || null,
     };
+
     socketRef.current.emit('send_message', messageData);
+
+    // Optionally add the message to the UI immediately for better UX
+    // This isn't necessary but gives faster feedback to the user
+    const optimisticMessage = {
+      id: `temp-${Date.now()}`, // Temporary ID that will be replaced when server responds
+      senderId: currentUser.user_id,
+      receiverId: parseInt(otherUserId),
+      message: newMessage,
+      timestamp: new Date().toISOString(),
+      isRead: false,
+      foodId: location.state?.foodId || null,
+    };
+
+    setMessages(prevMessages => [...prevMessages, optimisticMessage]);
     setNewMessage('');
   };
 
   const handleTyping = (e) => {
     setNewMessage(e.target.value);
-    if (!socketRef.current) return;
+    if (!socketRef.current || !socketConnected) return;
 
     socketRef.current.emit('typing', {
       userId: currentUser.user_id,
@@ -209,7 +241,7 @@ const ChatPage = () => {
         )}
       </div>
 
-      <div className="input-box flex items-center bg-white p-4 shadow-sm rounded-lg fixed bottom-0 left-0 right-0">
+      <form onSubmit={handleSendMessage} className="input-box flex items-center bg-white p-4 shadow-sm rounded-lg fixed bottom-0 left-0 right-0">
         <textarea
           value={newMessage}
           onChange={handleTyping}
@@ -218,12 +250,12 @@ const ChatPage = () => {
           className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none"
         />
         <button
-          onClick={handleSendMessage}
+          type="submit"
           className="send-button bg-blue-500 text-white py-2 px-4 ml-4 rounded-lg hover:bg-blue-600"
         >
           Send
         </button>
-      </div>
+      </form>
     </div>
   );
 };
