@@ -67,7 +67,31 @@ const ChatPage = () => {
 
     socketRef.current.on('new_message', (message) => {
       console.log('Received new message:', message);
-      setMessages((prevMessages) => [...prevMessages, message]);
+
+      // Use a functional update to avoid closure issues with the messages state
+      setMessages((prevMessages) => {
+        // Check if this is a message we just sent (to avoid duplicates)
+        const alreadyExists = prevMessages.some(
+          msg => (msg.id === message.id) ||
+                 (msg.isOptimistic &&
+                  msg.senderId === message.senderId &&
+                  msg.message === message.message)
+        );
+
+        if (alreadyExists) {
+          // Replace optimistic messages with the real ones or skip duplicates
+          return prevMessages.map(msg =>
+            (msg.isOptimistic &&
+             msg.senderId === message.senderId &&
+             msg.message === message.message)
+              ? { ...message, isOptimistic: false }
+              : msg
+          );
+        } else {
+          // It's a new message, add it
+          return [...prevMessages, message];
+        }
+      });
 
       // Mark as read if appropriate
       if (
@@ -133,9 +157,26 @@ const ChatPage = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // Track last sent message to prevent duplicates
+  const lastSentMessageRef = useRef({ text: '', timestamp: 0 });
+
   const handleSendMessage = (e) => {
     e.preventDefault(); // Prevent form submission
     if (!newMessage.trim() || !socketConnected) return;
+
+    // Prevent duplicate sends within a short time period
+    const currentTime = Date.now();
+    if (newMessage === lastSentMessageRef.current.text &&
+        currentTime - lastSentMessageRef.current.timestamp < 2000) {
+      console.log('Preventing duplicate send');
+      return;
+    }
+
+    // Update last sent message reference
+    lastSentMessageRef.current = {
+      text: newMessage,
+      timestamp: currentTime
+    };
 
     console.log('Sending message:', newMessage);
 
@@ -146,22 +187,29 @@ const ChatPage = () => {
       foodId: location.state?.foodId || null,
     };
 
+    // Send through socket
     socketRef.current.emit('send_message', messageData);
 
-    // Optionally add the message to the UI immediately for better UX
-    // This isn't necessary but gives faster feedback to the user
+    // Clear input immediately for better UX
+    setNewMessage('');
+
+    // Only add optimistic message if we're using that approach
+    const messageToDisplay = newMessage; // Store message text since we're clearing the input
+
+    // For better UX, we'll add an optimistic message with a temporary ID and flag
+    const tempId = `temp-${currentTime}`;
     const optimisticMessage = {
-      id: `temp-${Date.now()}`, // Temporary ID that will be replaced when server responds
+      id: tempId,
       senderId: currentUser.user_id,
       receiverId: parseInt(otherUserId),
-      message: newMessage,
+      message: messageToDisplay,
       timestamp: new Date().toISOString(),
       isRead: false,
       foodId: location.state?.foodId || null,
+      isOptimistic: true // Flag to identify this as an optimistic message
     };
 
     setMessages(prevMessages => [...prevMessages, optimisticMessage]);
-    setNewMessage('');
   };
 
   const handleTyping = (e) => {
@@ -217,7 +265,7 @@ const ChatPage = () => {
                   msg.senderId === currentUser.user_id
                     ? 'bg-blue-100 self-end ml-auto'
                     : 'bg-gray-200 self-start'
-                }`}
+                } ${msg.isOptimistic ? 'opacity-70' : ''}`}
               >
                 <div className="text-sm font-semibold text-center mb-1">
                   {msg.senderId === currentUser.user_id ? 'You' : otherUser?.first_name}
