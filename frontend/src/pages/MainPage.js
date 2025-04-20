@@ -30,6 +30,7 @@ const MainPage = () => {
   const [selectedDistance, setSelectedDistance] = useState(null);
   const [selectedExpiration, setSelectedExpiration] = useState(null);
   const [sortOption, setSortOption] = useState('Newest');
+  const [mapFeaturesEnabled, setMapFeaturesEnabled] = useState(true);
 
   useEffect(() => {
     const debounceTimer = setTimeout(() => {
@@ -38,9 +39,13 @@ const MainPage = () => {
         q: searchQuery,
       });
     }, 500);
-    fetchUserLocation();
+    
+    // Only fetch location once when component mounts
+    debouncedFetchUserLocation();
+    
     return () => clearTimeout(debounceTimer);
-  }, [searchQuery, selectedCategory, selectedDistance, selectedExpiration, userLocation, sortOption]);
+  }, [searchQuery, selectedCategory, selectedDistance, selectedExpiration, sortOption]);
+  // Note: removed userLocation from the dependency array
 
   const fetchFoodListings = async (filters = {}) => {
     try {
@@ -62,8 +67,8 @@ const MainPage = () => {
           listings.sort((a, b) => new Date(a.expiration_date) - new Date(b.expiration_date));
         } else if (sortOption === 'Distance' && userLocation) {
           listings.sort((a, b) => {
-            const distA = calculateHaversineDistance(userLocation.lat, userLocation.lng, a.latitude, a.longitude);
-            const distB = calculateHaversineDistance(userLocation.lat, userLocation.lng, b.latitude, b.longitude);
+            const distA = calculateHaversineDistance(userLocation.lat, userLocation.lng, a.pickup_latitude, a.pickup_longitude);
+            const distB = calculateHaversineDistance(userLocation.lat, userLocation.lng, b.pickup_latitude, b.pickup_longitude);
             return distA - distB;
           });
         } else {
@@ -84,6 +89,8 @@ const MainPage = () => {
           image: getFoodEmoji(item.food_type),
           timePosted: formatTimeAgo(item.created_at),
           featured: false,
+          pickup_latitude: item.pickup_latitude,
+          pickup_longitude: item.pickup_longitude
         }));
 
         setRecommendations(transformedListings);
@@ -103,22 +110,64 @@ const MainPage = () => {
           const { latitude, longitude } = position.coords;
           setUserLocation({ lat: latitude, lng: longitude });
 
-          fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`)
-            .then((response) => response.json())
-            .then((data) => {
-              if (data.address) {
-                const city = data.address.city || data.address.town || data.address.village || 'Unknown';
-                setCurrentCity(city);
+          // Use a cached version if available
+          const cacheKey = `${latitude.toFixed(4)},${longitude.toFixed(4)}`;
+          const cachedCity = localStorage.getItem(`city_${cacheKey}`);
+          
+          if (cachedCity) {
+            setCurrentCity(cachedCity);
+            return; // Use cached city name
+          }
+
+          // Set a default first
+          setCurrentCity('My Location');
+          
+          // Then try to get the actual city in the background
+          // Add a delay to respect API rate limits
+          setTimeout(() => {
+            fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`, {
+              headers: {
+                'User-Agent': 'FoodShare App (Educational Project)',
+                'Accept-Language': 'en'
               }
             })
-            .catch((error) => {
-              console.error('Error getting location name:', error);
-            });
+              .then((response) => {
+                if (!response.ok) {
+                  throw new Error(`Address lookup failed: ${response.status}`);
+                }
+                return response.json();
+              })
+              .then((data) => {
+                if (data.address) {
+                  const city = data.address.city || data.address.town || data.address.village || 'My Location';
+                  setCurrentCity(city);
+                  // Cache the result
+                  localStorage.setItem(`city_${cacheKey}`, city);
+                }
+              })
+              .catch((error) => {
+                console.warn('Error getting location name (non-critical):', error);
+              });
+          }, 1000);
         },
         (error) => {
           console.error('Error getting location:', error);
+          setCurrentCity('Location Unknown');
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0
         }
       );
+    }
+  };
+
+  // This will help prevent excessive re-rendering from location changes
+  const debouncedFetchUserLocation = () => {
+    // Only fetch location if we don't already have it
+    if (!userLocation) {
+      fetchUserLocation();
     }
   };
 
@@ -132,14 +181,16 @@ const MainPage = () => {
   };
 
   const calculateDistance = (item) => {
-    if (userLocation && item.latitude && item.longitude) {
-      const distance = calculateHaversineDistance(userLocation.lat, userLocation.lng, item.latitude, item.longitude);
+    if (userLocation && item.pickup_latitude && item.pickup_longitude) {
+      const distance = calculateHaversineDistance(userLocation.lat, userLocation.lng, item.pickup_latitude, item.pickup_longitude);
       return `${distance.toFixed(1)} miles`;
     }
     return `${(Math.random() * 2).toFixed(1)} miles`;
   };
 
   const calculateHaversineDistance = (lat1, lon1, lat2, lon2) => {
+    if (!lat1 || !lon1 || !lat2 || !lon2) return 0;
+    
     const R = 3958.8;
     const dLat = ((lat2 - lat1) * Math.PI) / 180;
     const dLon = ((lon2 - lon1) * Math.PI) / 180;
@@ -236,11 +287,6 @@ const MainPage = () => {
       setFavorites([...favorites, itemId]);
     }
   };
-
-  // const shareItem = (e, item) => {
-  //   e.stopPropagation();
-  //   console.log('Sharing item:', item);
-  // };
 
   const shareMenuRef = useRef(null);
   const [activeShareId, setActiveShareId] = useState(null);
@@ -418,7 +464,6 @@ const MainPage = () => {
         </div>
 
         <div className="actions-container">
-
           <div className="sort-dropdown">
             <label htmlFor="sort-select" style={{ marginRight: '8px' }}>Sort by:</label>
             <select
@@ -442,6 +487,16 @@ const MainPage = () => {
           </button>
           <button className="add-button" onClick={handleAddPost}>
             <Plus size={20} />
+          </button>
+        </div>
+
+        {/* Map Features Toggle Button */}
+        <div className="text-center my-2">
+          <button 
+            onClick={() => setMapFeaturesEnabled(!mapFeaturesEnabled)} 
+            className="text-sm px-2 py-1 bg-gray-100 rounded text-gray-600 hover:bg-gray-200"
+          >
+            {mapFeaturesEnabled ? 'Disable Map Features' : 'Enable Map Features'}
           </button>
         </div>
 
@@ -528,7 +583,7 @@ const MainPage = () => {
           </div>
         )}
 
-        {showLocationModal && (
+        {showLocationModal && mapFeaturesEnabled && (
           <LocationModal
             isOpen={showLocationModal}
             onClose={() => setShowLocationModal(false)}
@@ -537,7 +592,7 @@ const MainPage = () => {
           />
         )}
 
-        {showMap && (
+        {showMap && mapFeaturesEnabled && (
           <div className="map-view-container">
             <LocationMap
               position={userLocation ? [userLocation.lat, userLocation.lng] : undefined}
@@ -545,6 +600,17 @@ const MainPage = () => {
               zoom={13}
               selectable={false}
             />
+          </div>
+        )}
+
+        {showMap && !mapFeaturesEnabled && (
+          <div className="map-fallback">
+            <div className="bg-gray-100 p-8 text-center rounded-lg">
+              <h3 className="text-lg font-medium text-gray-700">Map features temporarily disabled</h3>
+              <p className="text-gray-500 mt-2">
+                Map features are currently disabled to improve performance.
+              </p>
+            </div>
           </div>
         )}
 
@@ -601,16 +667,9 @@ const MainPage = () => {
                             >
                               <Heart size={18} />
                             </button>
-                            {/* <button
-                              className="action-button share-btn"
-                              onClick={(e) => shareItem(e, item)}
-                            >
-                              <Share2 size={18} />
-                            </button> */}
                             <button
                               className="action-button share-btn"
                               onClick={(e) => {
-                                // e.stopPropagation();
                                 toggleShareMenu(e, item.id);
                               }}
                               title="Share this post"

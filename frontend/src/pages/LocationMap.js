@@ -3,11 +3,12 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { MapPin } from 'lucide-react';
 
-
-
 // Default position for Atlanta
 const DEFAULT_POSITION = [33.749, -84.388]; // Atlanta coordinates
 const DEFAULT_ZOOM = 13;
+
+// Create a cache for location data to reduce API calls
+const locationCache = {};
 
 const LocationMap = ({ 
   position = DEFAULT_POSITION, 
@@ -27,9 +28,13 @@ const LocationMap = ({
     if (!mapInstanceRef.current) {
       mapInstanceRef.current = L.map(mapRef.current).setView(currentPosition, zoom);
       
-      
+      // Use a map tile service that's more reliable for development
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        // Add additional parameters to reduce rate limiting issues
+        maxZoom: 19,
+        tileSize: 512,
+        zoomOffset: -1
       }).addTo(mapInstanceRef.current);
      
       markersLayerRef.current = L.layerGroup().addTo(mapInstanceRef.current);
@@ -46,7 +51,7 @@ const LocationMap = ({
           // Add new marker
           const marker = L.marker([lat, lng]).addTo(markersLayerRef.current);
           
-          // Get address for selected location 
+          // Get address for selected location with debounce
           getAddressFromCoordinates(lat, lng).then(address => {
             if (onSelectLocation) {
               onSelectLocation({ lat, lng, address });
@@ -73,14 +78,14 @@ const LocationMap = ({
       
       // Add markers for each food item
       foodItems.forEach(item => {
-        if (item.latitude && item.longitude) {
-          const marker = L.marker([item.latitude, item.longitude])
+        if (item.pickup_latitude && item.pickup_longitude) {
+          const marker = L.marker([item.pickup_latitude, item.pickup_longitude])
             .addTo(markersLayerRef.current)
             .bindPopup(`
               <div>
                 <strong>${item.title}</strong><br>
-                ${item.foodType} • ${item.distance}<br>
-                Expires in ${item.expirationDays} day${item.expirationDays !== 1 ? 's' : ''}
+                ${item.foodType || 'Food'} • ${item.distance || 'Unknown distance'}<br>
+                ${item.expirationDays ? `Expires in ${item.expirationDays} day${item.expirationDays !== 1 ? 's' : ''}` : ''}
               </div>
             `);
         }
@@ -109,10 +114,20 @@ const LocationMap = ({
               // Add new marker
               L.marker([latitude, longitude]).addTo(markersLayerRef.current);
               
-              // Get address for current location
-              getAddressFromCoordinates(latitude, longitude).then(address => {
-                onSelectLocation({ lat: latitude, lng: longitude, address });
-              });
+              // Use a simpler approach for the address to avoid API rate limits
+              const address = 'My Current Location';
+              onSelectLocation({ lat: latitude, lng: longitude, address });
+              
+              // Optionally get the actual address in the background
+              getAddressFromCoordinates(latitude, longitude, true)
+                .then(fullAddress => {
+                  if (fullAddress && fullAddress !== 'Unknown location') {
+                    onSelectLocation({ lat: latitude, lng: longitude, address: fullAddress });
+                  }
+                })
+                .catch(error => {
+                  console.warn('Address lookup failed silently:', error);
+                });
             }
           }
           
@@ -122,6 +137,11 @@ const LocationMap = ({
           console.error('Error getting location:', error);
           setIsLoading(false);
           alert('Unable to retrieve your location. Please check your browser permissions.');
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0
         }
       );
     } else {
@@ -130,16 +150,62 @@ const LocationMap = ({
     }
   };
 
-  const getAddressFromCoordinates = async (lat, lng) => {
+  const getAddressFromCoordinates = async (lat, lng, silent = false) => {
+    // Create a cache key
+    const cacheKey = `${lat.toFixed(4)},${lng.toFixed(4)}`;
+    
+    // Check if we have this location in cache
+    if (locationCache[cacheKey]) {
+      return locationCache[cacheKey];
+    }
+    
+    // For immediate response, return a generic address
+    if (!silent) {
+      setTimeout(() => {
+        fetchAddressInBackground(lat, lng, cacheKey);
+      }, 100);
+      
+      return 'Selected Location';
+    }
+
     try {
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
-      );
-      const data = await response.json();
-      return data.display_name || 'Unknown location';
+      return await fetchAddressInBackground(lat, lng, cacheKey);
     } catch (error) {
       console.error('Error getting address:', error);
       return 'Unknown location';
+    }
+  };
+  
+  // Separate function to fetch address in background to not block UI
+  const fetchAddressInBackground = async (lat, lng, cacheKey) => {
+    try {
+      // Add delay to avoid rate limiting
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`,
+        {
+          headers: {
+            'User-Agent': 'FoodShare App (Educational Project)',
+            'Accept-Language': 'en'
+          }
+        }
+      );
+      
+      if (!response.ok) {
+        throw new Error(`Address lookup failed: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      const address = data.display_name || 'Selected Location';
+      
+      // Store in cache
+      locationCache[cacheKey] = address;
+      
+      return address;
+    } catch (error) {
+      console.warn('Background address fetch failed:', error);
+      return 'Selected Location';
     }
   };
 
