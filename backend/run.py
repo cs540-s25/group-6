@@ -16,7 +16,8 @@ try:
     print("Creating application instance...")
     app = create_app()
     print("Application instance created successfully")
-
+    
+    from app.sockets import chat_events
     if __name__ == '__main__':
         # Run the application with Socket.IO support
         print("Starting Socket.IO server on port 5001...")
