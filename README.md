@@ -187,6 +187,12 @@ The frontend React application is structured as follows:
 #### ✅ Sprint 3
 <img width="600" src="https://github.com/user-attachments/assets/ea367490-b032-44fa-b365-9d11e53b4d93" />
 
+#### ✅ Sprint 4
+<img width="600" src="https://github.com/user-attachments/assets/dd3d42c7-3c3a-4708-83d5-e164f99e0eb4" />
+
+#### ✅ Sprint 5
+<img width="600" src="https://github.com/user-attachments/assets/86e2701c-aa41-4aac-9a1d-d16f4546117e" />
+
 ## Future Enhancements
 
 As outlined in the project plan, future phases include:
