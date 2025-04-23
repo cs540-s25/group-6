@@ -61,21 +61,16 @@ const MainPage = () => {
       });
       if (response?.food_listings) {
         let listings = response.food_listings;
-
-        // Sort listings based on sortOption
-        if (sortOption === 'Expiring') {
-          listings.sort((a, b) => new Date(a.expiration_date) - new Date(b.expiration_date));
-        } else if (sortOption === 'Distance' && userLocation) {
-          listings.sort((a, b) => {
-            const distA = calculateHaversineDistance(userLocation.lat, userLocation.lng, a.pickup_latitude, a.pickup_longitude);
-            const distB = calculateHaversineDistance(userLocation.lat, userLocation.lng, b.pickup_latitude, b.pickup_longitude);
-            return distA - distB;
-          });
-        } else {
-          listings.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)); // Default: Newest
-        }
-
-        const transformedListings = listings.map((item) => ({
+        
+        const transformedListings = listings.map((item) => {
+          const days = calculateDaysRemaining(item.expiration_date);
+          const miles = calculateHaversineDistance(
+            userLocation?.lat, 
+            userLocation?.lng, 
+            item.pickup_latitude, 
+            item.pickup_longitude
+  );
+        return{
           id: item.food_id,
           type: 'food',
           title: item.title,
@@ -91,9 +86,20 @@ const MainPage = () => {
           featured: false,
           pickup_latitude: item.pickup_latitude,
           pickup_longitude: item.pickup_longitude
-        }));
-
-        setRecommendations(transformedListings);
+        };
+      });
+        let sortedListings = [...transformedListings];
+        if (sortOption === 'Expiring') {
+          // Soonest‑to‑expire first
+          sortedListings.sort((a, b) => a.expirationDays - b.expirationDays);
+        } else if (sortOption === 'Distance' && userLocation) {
+          // Closest first
+          sortedListings.sort((a, b) => a.distanceMiles - b.distanceMiles);
+        } else {
+          // Newest first
+          sortedListings.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        }
+        setRecommendations(sortedListings);
       }
     } catch (err) {
       console.error('API Error:', err.response?.data || err.message);
