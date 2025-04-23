@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  backend:
+    build: .
+    ports:
+      - "5001:5001"
+    environment:
+      - SECRET_KEY=dev-secret-key-replace-in-production
+      - DATABASE_URI=sqlite:///resource_sharing.db
+      - JWT_SECRET_KEY=jwt-secret-key-replace-in-production
+      - MAIL_USERNAME=noreply@example.com
+      - MAIL_PASSWORD=password
+      - CORS_ALLOWED_ORIGINS=http://localhost:3000
+    volumes:
+      - ./app:/app/app
+      - ./instance:/app/instance
+    restart: unless-stopped
+    networks:
+      - foodshare-network
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_API_URL=http://localhost:5001
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - foodshare-network
+
+networks:
+  foodshare-network:
+    driver: bridge

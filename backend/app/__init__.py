@@ -11,18 +11,12 @@ from flask_cors import CORS
 from flask_socketio import SocketIO
 from itsdangerous import URLSafeTimedSerializer
 import eventlet
-from app.sockets import chat_events
-
 
 # Initialize extensions
 db = SQLAlchemy()
 mail = Mail()
 serializer = URLSafeTimedSerializer('dev-secret-key-replace-in-production')
-socketio = SocketIO(
-    cors_allowed_origins='*',  # For development only
-    logger=True,  # Enable logging
-    engineio_logger=True  # Enable Engine.IO logging
-)
+socketio = SocketIO()
 
 def create_app():
     """
@@ -48,25 +42,19 @@ def create_app():
     db.init_app(app)
     mail.init_app(app)
     
-    # Initialize Socket.IO with eventlet and enhanced configuration
+    # Initialize Socket.IO with eventlet
     socketio.init_app(
         app, 
         cors_allowed_origins='*',  # For development only
-        async_mode='eventlet',  # Explicitly set async mode
-        ping_timeout=60,
-        ping_interval=25,
-        max_http_buffer_size=10e6,  # 10 MB
-        always_connect=True
+        async_mode='eventlet'  # Explicitly set async mode
     )
     
-    # Setup CORS with improved configuration
+    # Setup CORS
     CORS(
         app,
         resources={r"/*": {"origins": '*'}},  # For development only
         supports_credentials=True,
-        allow_headers=["Content-Type", "Authorization", "Cache-Control", "X-Requested-With"],
-        expose_headers=["Content-Type", "Authorization"],
-        methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+        allow_headers=["Content-Type", "Authorization"]
     )
     
     # Register blueprints
