@@ -60,9 +60,7 @@ Make enviornment file and name it to `.env` and place it in the root backend dir
 
 Sample content of `.env` file:
 ```env
-# Email Configuration
-MAIL_USERNAME=your_email@gmail.com
-MAIL_PASSWORD=your_generated_app_password
+
 
 # Flask App Settings
 FLASK_APP=app.py
