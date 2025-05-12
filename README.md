@@ -1,7 +1,4 @@
 
-
-# 🧑‍💻 Group 6's team project
-
 # ReSource - Comprehensive Resource Sharing Platform
 
 ReSource is a platform connecting those with surplus resources to those in need within the Emory University community. Initially focusing on food redistribution, it is designed to expand into book sharing, furniture, and financial contributions.
@@ -193,9 +190,9 @@ Accessible at [http://localhost:3000](http://localhost:3000)
 - Multi-language support
 
 ## Project Team - Group 6
+- Atharva Negi
 - Nayoung Choi
 - Harry Jeon
-- Atharva Negi
 - Bohan Wang
 - Venkata Anirudh Pillala
 
@@ -253,6 +250,6 @@ a) Are there any outside commitments (family, job, personal) that could impact a
 Team members should inform the group of major conflicts in advance.
 
 Indicate full team agreement on these decisions: All team members must indicate their agreement by typing their names at the bottom of this document.
-Nayoung Choi, Harry Jeon, Atharva Negi, Bohan Wang, Venkata Anirudh Pillala
+Atharva Negi, Nayoung Choi, Harry Jeon, Bohan Wang, Venkata Anirudh Pillala
 ```
 
